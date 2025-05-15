@@ -102,9 +102,9 @@ CREATE TABLE ME_CA (
 CREATE TABLE DANHBAT_THUYSAN (
     MaThuySan           NVARCHAR2(20),
     MaMeCa              INTEGER,
-    MaChuyenDanhBat     NUMBER(12,2),
+    MaChuyenDanhBat     NVARCHAR2(20),
     KhoiLuong           NUMBER NOT NULL,
-    PRIMARY KEY (MeThuySan, MaMeCa, MaChuyenDanhBat)
+    PRIMARY KEY (MaThuySan, MaMeCa, MaChuyenDanhBat)
 );
 
 -- 12. Bang THUY_SAN
