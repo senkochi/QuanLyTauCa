@@ -4,7 +4,7 @@ CREATE TABLE APP_USER (
     USER_ID        NVARCHAR2(20)   PRIMARY KEY,
     USERNAME       NVARCHAR2(50)   NOT NULL UNIQUE,
     PASSWORD       NVARCHAR2(100)  NOT NULL,
-    ROLE           NVARCHAR2(20)   NOT NULL DEFAULT 'CHUTAU'
+    ROLE           NVARCHAR2(20)   DEFAULT 'CHUTAU'
 );
 
 -- 2. Bang ADMIN
@@ -15,52 +15,51 @@ CREATE TABLE ADMIN (
     CCCD           NVARCHAR2(20)    NOT NULL UNIQUE
 );
 
-
 -- 3. Bang CHU_TAU
 CREATE TABLE CHU_TAU (
     MaChuTau        NVARCHAR2(20)   PRIMARY KEY,
     HoTen           NVARCHAR2(50)   NOT NULL,
     SDT             NVARCHAR2(20)   NOT NULL,
-    DiaChi          NVARCHAR2(100)  NOT NULL,
+    DiaChi          NVARCHAR2(100),
     CCCD            NVARCHAR2(20)   NOT NULL UNIQUE,
-    TrangThaiDuyet  NVARCHAR2(50)   NOT NULL DEFAULT 'DANG CHO'
+    TrangThaiDuyet  NVARCHAR2(50)   DEFAULT 'DANG CHO'
 );
 
 -- 4. Bang TAU_CA
 CREATE TABLE TAU_CA (
     MaTauCa            NVARCHAR2(20) PRIMARY KEY,
-    SoDangKy           NVARCHAR2(50),
+    SoDangKy           NVARCHAR2(50) UNIQUE,
     LoaiTau            NVARCHAR2(50),
     ChieuDai           NUMBER(10,2),
     CongSuat           NUMBER(10,2),
     NamDongTau         INTEGER,
     TrangThaiDuyet     NVARCHAR2(20) DEFAULT 'DANG CHO',
     TrangThaiHoatDong  NVARCHAR2(20) DEFAULT 'DANG CHO|CHUA DK',
-    MaChuTau           NVARCHAR2(20),
-    MaNgheChinh        NVARCHAR2(20)
+    MaChuTau           NVARCHAR2(20) NOT NULL,
+    MaNgheChinh        NVARCHAR2(20) NOT NULL
 );
 
 -- 5. Bang NGHE
 CREATE TABLE NGHE (
     MaNghe        NVARCHAR2(20) PRIMARY KEY,
-    TenNghe       NVARCHAR2(100) 
+    TenNghe       NVARCHAR2(100) NOT NULL UNIQUE
 );
 
 -- 6. BANG TAU_NGHE
 CREATE TABLE TAU_NGHE (
-    MaTauCa       NVARCHAR2(20)  NOT NULL,
-    MaNghe        NVARCHAR2(20)  NOT NULL,
-    VungHoatDong  NVARCHAR2(100),
+    MaTauCa       NVARCHAR2(20),
+    MaNghe        NVARCHAR2(20),
+    VungHoatDong  NVARCHAR2(100) NOT NULL,
     PRIMARY KEY (MaTauCa, MaNghe)
 );
 
 -- 7. Bang VI_PHAM
 CREATE TABLE VI_PHAM (
-    MaViPham            NVARCHAR2(20) PRIMARY KEY,
-    ThoiGian            DATE         NOT NULL,
-    ViTri               SDO_GEOMETRY NOT NULL,
-    MoTa                NVARCHAR2(400),
-    MaChuyenDanhBat     NVARCHAR2(20)
+    MaViPham            NVARCHAR2(20)   PRIMARY KEY,
+    ThoiGian            DATE            NOT NULL,
+    ViTri               SDO_GEOMETRY    NOT NULL,
+    MoTa                NVARCHAR2(400)  NOT NULL,
+    MaChuyenDanhBat     NVARCHAR2(20)   NOT NULL
 );
 
 -- 8. Bang LOG_HAI_TRINH
@@ -81,18 +80,18 @@ CREATE TABLE CHUYEN_DANH_BAT (
     NgayCapBen          DATE,
     CangDi              NVARCHAR2(100),
     CangVe              NVARCHAR2(100),
-    TongKhoiLuong       NUMBER(12,2),
-    TrangThaiDuyet      NVARCHAR2(20) DEFAULT 'DANGCHO',
-    TrangThaiHoatDong   NVARCHAR2(20) DEFAULT 'DANGCHO',
-    MaTauCa             NVARCHAR2(20),
-    MaNguTruong         NVARCHAR2(20)
+    TongKhoiLuong       NUMBER(12,2) DEFAULT 0,
+    TrangThaiDuyet      NVARCHAR2(20) DEFAULT 'DANG CHO',
+    TrangThaiHoatDong   NVARCHAR2(20) DEFAULT 'DANG CHO',
+    MaTauCa             NVARCHAR2(20) NOT NULL,
+    MaNguTruong         NVARCHAR2(20) NOT NULL
 );
 
 -- 10. Bang ME_CA
 CREATE TABLE ME_CA (
     MaMeCa              NVARCHAR2(20),
     MaChuyenDanhBat     NVARCHAR2(20),
-    KhoiLuongMeCa       NUMBER(12,2),
+    KhoiLuongMeCa       NUMBER(12,2) DEFAULT 0,
     ThoiGianThaLuoi     DATE,
     ThoiGianKeoLuoi     DATE,
     ViTriKeoLuoi        SDO_GEOMETRY NOT NULL,
@@ -111,38 +110,38 @@ CREATE TABLE DANHBAT_THUYSAN (
 -- 12. Bang THUY_SAN
 CREATE TABLE THUY_SAN (
     MaThuySan           NVARCHAR2(20) PRIMARY KEY,
-    TenLoaiThuySan      NVARCHAR2(100)
+    TenLoaiThuySan      NVARCHAR2(100) UNIQUE
 );
 
 -- 13. Bang NGU_TRUONG
 CREATE TABLE NGU_TRUONG (
     MaNguTruong         NVARCHAR2(20) PRIMARY KEY,
-    TenNguTruong        NVARCHAR2(100),
+    TenNguTruong        NVARCHAR2(100) UNIQUE,
     ViTri               SDO_GEOMETRY NOT NULL,
-    SoLuongTauHienTai   INTEGER,
-    SoLuongTauToiDa     INTEGER
+    SoLuongTauHienTai   INTEGER DEFAULT 0,
+    SoLuongTauToiDa     INTEGER NOT NULL
 );
 
 -- 14. Bang THOI_TIET
 CREATE TABLE THOI_TIET (
     MaDuBao         NVARCHAR2(20) PRIMARY KEY,
-    ThoiGianDuBao   DATE,
-    KhuVucAnhHuong  NVARCHAR2(100),
-    ChiTietDuBao    NVARCHAR2(400)
+    ThoiGianDuBao   DATE            NOT NULL,
+    KhuVucAnhHuong  NVARCHAR2(100)  NOT NULL,
+    ChiTietDuBao    NVARCHAR2(400)  NOT NULL
 );
 
 -- 15. Bang BAO
 CREATE TABLE BAO (
-    MaBao   NVARCHAR2(20) PRIMARY KEY,
-    TenBao  NVARCHAR2(100)
+    MaBao   NVARCHAR2(20)   PRIMARY KEY,
+    TenBao  NVARCHAR2(100)  NOT NULL UNIQUE
 );
 
 -- 16. Bang LOG_DUONG_DI_BAO
 CREATE TABLE LOG_DUONG_DI_BAO (
-    MaLogDuongDi    NVARCHAR2(20) PRIMARY KEY,
-    MaBao           NVARCHAR2(20) NOT NULL,
-    ThoiGian        DATE         NOT NULL,
-    ViTri           SDO_GEOMETRY NULL,
+    MaLogDuongDi    NVARCHAR2(20),
+    MaBao           NVARCHAR2(20),
+    ThoiGian        DATE            NOT NULL,
+    ViTri           SDO_GEOMETRY    NOT NULL,
     MucDo           NUMBER(20),
     PRIMARY KEY (MaLogDuongDi, MaBao)
 );
