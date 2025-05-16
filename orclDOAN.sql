@@ -4,13 +4,8 @@ CREATE TABLE APP_USER (
     USER_ID        NVARCHAR2(20)   PRIMARY KEY,
     USERNAME       NVARCHAR2(50)   NOT NULL UNIQUE,
     PASSWORD       NVARCHAR2(100)  NOT NULL,
-<<<<<<< HEAD
-    ROLE           NVARCHAR2(20)   NOT NULL DEFAULT 'CHUTAU'
-);  
-=======
     ROLE           NVARCHAR2(20)   DEFAULT 'CHUTAU'
 );
->>>>>>> 88215b967de5c6c5485604edeb7f277a248e616e
 
 -- 2. Bang ADMIN
 CREATE TABLE ADMIN (
@@ -22,21 +17,12 @@ CREATE TABLE ADMIN (
 
 -- 3. Bang CHU_TAU
 CREATE TABLE CHU_TAU (
-<<<<<<< HEAD
-    MaChuTau        NVARCHAR2(20) PRIMARY KEY,
-    HoTen           NVARCHAR2(50) NOT NULL,
-    SDT             NVARCHAR2(20) NOT NULL,
-    DiaChi          NVARCHAR2(100) NOT NULL,
-    CCCD            NVARCHAR2(20) NOT NULL UNIQUE,
-    TrangThaiDuyet  NVARCHAR2(50) NOT NULL DEFAULT 'DANG CHO'
-=======
     MaChuTau        NVARCHAR2(20)   PRIMARY KEY,
     HoTen           NVARCHAR2(50)   NOT NULL,
     SDT             NVARCHAR2(20)   NOT NULL,
     DiaChi          NVARCHAR2(100),
     CCCD            NVARCHAR2(20)   NOT NULL UNIQUE,
     TrangThaiDuyet  NVARCHAR2(50)   DEFAULT 'DANG CHO'
->>>>>>> 88215b967de5c6c5485604edeb7f277a248e616e
 );
 
 -- 4. Bang TAU_CA
@@ -152,17 +138,10 @@ CREATE TABLE BAO (
 
 -- 16. Bang LOG_DUONG_DI_BAO
 CREATE TABLE LOG_DUONG_DI_BAO (
-<<<<<<< HEAD
-    MaLogDuongDi    NVARCHAR2(20),
-    MaBao           NVARCHAR2(20) NOT NULL,
-    ThoiGian        DATE         NOT NULL,
-    ViTri           SDO_GEOMETRY NULL,
-=======
     MaLogDuongDi    INTEGER,
     MaBao           NVARCHAR2(20),
     ThoiGian        DATE            NOT NULL,
     ViTri           SDO_GEOMETRY    NOT NULL,
->>>>>>> 88215b967de5c6c5485604edeb7f277a248e616e
     MucDo           NUMBER(20),
     PRIMARY KEY (MaLogDuongDi, MaBao)
 );
@@ -386,3 +365,4 @@ ALTER TABLE LOG_DUONG_DI_BAO ADD CONSTRAINT FK_LOG_DUONG_DI_BAO_1 FOREIGN KEY (M
 -- VI. CREATE FUNCTION
 
 -- VII. TEST CASE
+--hoang map
