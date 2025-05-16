@@ -5,7 +5,7 @@ CREATE TABLE APP_USER (
     USERNAME       NVARCHAR2(50)   NOT NULL UNIQUE,
     PASSWORD       NVARCHAR2(100)  NOT NULL,
     ROLE           NVARCHAR2(20)   NOT NULL DEFAULT 'CHUTAU'
-);
+);  
 
 -- 2. Bang ADMIN
 CREATE TABLE ADMIN (
@@ -18,12 +18,12 @@ CREATE TABLE ADMIN (
 
 -- 3. Bang CHU_TAU
 CREATE TABLE CHU_TAU (
-    MaChuTau        NVARCHAR2(20)   PRIMARY KEY,
-    HoTen           NVARCHAR2(50)   NOT NULL,
-    SDT             NVARCHAR2(20)   NOT NULL,
-    DiaChi          NVARCHAR2(100)  NOT NULL,
-    CCCD            NVARCHAR2(20)   NOT NULL UNIQUE,
-    TrangThaiDuyet  NVARCHAR2(50)   NOT NULL DEFAULT 'DANG CHO'
+    MaChuTau        NVARCHAR2(20) PRIMARY KEY,
+    HoTen           NVARCHAR2(50) NOT NULL,
+    SDT             NVARCHAR2(20) NOT NULL,
+    DiaChi          NVARCHAR2(100) NOT NULL,
+    CCCD            NVARCHAR2(20) NOT NULL UNIQUE,
+    TrangThaiDuyet  NVARCHAR2(50) NOT NULL DEFAULT 'DANG CHO'
 );
 
 -- 4. Bang TAU_CA
@@ -105,7 +105,7 @@ CREATE TABLE DANHBAT_THUYSAN (
     MaMeCa              NVARCHAR2(20),
     MaChuyenDanhBat     NUMBER(12,2),
     KhoiLuong           NUMBER NOT NULL,
-    PRIMARY KEY (MeThuySan, MaMeCa, MaChuyenDanhBat)
+    PRIMARY KEY (MaThuySan, MaMeCa, MaChuyenDanhBat)
 );
 
 -- 12. Bang THUY_SAN
@@ -139,7 +139,7 @@ CREATE TABLE BAO (
 
 -- 16. Bang LOG_DUONG_DI_BAO
 CREATE TABLE LOG_DUONG_DI_BAO (
-    MaLogDuongDi    NVARCHAR2(20) PRIMARY KEY,
+    MaLogDuongDi    NVARCHAR2(20),
     MaBao           NVARCHAR2(20) NOT NULL,
     ThoiGian        DATE         NOT NULL,
     ViTri           SDO_GEOMETRY NULL,
