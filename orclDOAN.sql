@@ -435,6 +435,21 @@ EXCEPTION
         RAISE;
 END;
 /
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_dang_hoat_dong_cua_chu_tau(
+    p_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau  NVARCHAR2
+    
+)
+IS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT * FROM TAU_CA t WHERE t.MaChuTau = p_MaChuTau AND t.TRANGTHAIHOATDONG ='DANG HOAT DONG';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_dang_hoat_dong(
     
     p_cursor OUT SYS_REFCURSOR
