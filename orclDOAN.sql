@@ -892,4 +892,52 @@ BEGIN
 END;
 -- VI. CREATE FUNCTION
 
+ --Kiem tra dang nhap
+ CREATE OR REPLACE FUNCTION Fn_dang_nhap (
+    p_username NVARCHAR2,
+    p_password NVARCHAR2
+) RETURN NVARCHAR2
+IS
+    f_user_id NVARCHAR2(20);
+BEGIN
+    SELECT USER_ID
+    INTO f_user_id
+    FROM APP_USER
+    WHERE USERNAME = p_username
+      AND PASSWORD = p_password;
+
+    RETURN f_user_id;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL;
+END;
+/
+--Kiem tra dang ky
+CREATE OR REPLACE FUNCTION Fn_kiem_tra_username_ton_tai (
+    p_username NVARCHAR2
+) RETURN BOOLEAN
+IS
+    f_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO f_count
+    FROM APP_USER
+    WHERE USERNAME = p_username;
+
+    RETURN f_count > 0;
+END;
+/
+CREATE OR REPLACE FUNCTION Fn_kiem_tra_cccd_ton_tai (
+    p_cccd NVARCHAR2
+) RETURN BOOLEAN
+IS
+    f_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO f_count
+    FROM CHU_TAU
+    WHERE CCCD = p_cccd;
+
+    RETURN f_count > 0;
+END;
+/
+
 -- VII. TEST CASE
