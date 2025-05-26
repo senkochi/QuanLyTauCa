@@ -940,4 +940,55 @@ BEGIN
 END;
 /
 
+--Dang ky chuyen danh bat moi
+CREATE OR REPLACE FUNCTION Fn_kiem_tra_so_luong_tau (
+    p_MaNguTruong NVARCHAR2
+) RETURN BOOLEAN
+IS
+    f_HienTai INTEGER;
+    f_ToiDa INTEGER;
+BEGIN
+    SELECT SoLuongTauHienTai, SoLuongTauToiDa
+    INTO f_HienTai, f_ToiDa
+    FROM NGU_TRUONG
+    WHERE MaNguTruong = p_MaNguTruong;
+
+    RETURN f_HienTai < f_ToiDa;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN FALSE; 
+END;
+/
+CREATE OR REPLACE FUNCTION Fn_tao_chuyen_danh_bat (
+    p_NgayXuatBen     DATE,
+    p_NgayCapBen      DATE,
+    p_CangDi          NVARCHAR2,
+    p_CangVe          NVARCHAR2,
+    p_MaTauCa         NVARCHAR2,
+    p_MaNguTruong     NVARCHAR2
+) RETURN NVARCHAR2
+IS
+    f_MaChuyenDanhBat NVARCHAR2(20);
+BEGIN
+	SELECT 'CDP' || SEQ_CHUYEN_DANH_BAT.NEXTVAL
+    INTO f_MaChuyenDanhBat
+    FROM DUAL;
+
+    INSERT INTO CHUYEN_DANH_BAT (
+        MaChuyenDanhBat, NgayXuatBen, NgayCapBen,
+        CangDi, CangVe, MaTauCa, MaNguTruong
+    ) VALUES (
+        f_MaChuyenDanhBat, p_NgayXuatBen, p_NgayCapBen,
+        NULLIF(p_CangDi, ''), NULLIF(p_CangVe, ''),
+        p_MaTauCa, p_MaNguTruong
+    );
+
+    RETURN f_MaChuyenDanhBat;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN NULL; 
+END;
+/
+
+
 -- VII. TEST CASE
