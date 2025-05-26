@@ -990,5 +990,53 @@ EXCEPTION
 END;
 /
 
+--Kiem tra user co phai admin khong
+CREATE OR REPLACE FUNCTION Fn_la_admin (
+    p_user_id NVARCHAR2
+) RETURN BOOLEAN
+IS
+    f_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO f_count
+    FROM ADMIN
+    WHERE MaAdmin = p_user_id;
+
+    RETURN f_count > 0;
+END;
+/
+
+--Kiem tra tau co hoat dong khong
+CREATE OR REPLACE FUNCTION Fn_tau_dang_hoat_dong (
+    p_MaTauCa NVARCHAR2
+) RETURN BOOLEAN
+IS
+    f_trangthai NVARCHAR2(20);
+BEGIN
+    SELECT TrangThaiHoatDong INTO f_trangthai
+    FROM TAU_CA
+    WHERE MaTauCa = p_MaTauCa;
+
+    RETURN f_trangthai = 'DANG HOAT DONG';
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN FALSE;
+END;
+/
+
+--Dem so chuyen danh bat cua mot tau
+CREATE OR REPLACE FUNCTION Fn_dem_chuyen_danh_bat (
+    p_MaTauCa NVARCHAR2
+) RETURN INTEGER
+IS
+    f_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO f_count
+    FROM CHUYEN_DANH_BAT
+    WHERE MaTauCa = p_MaTauCa;
+
+    RETURN f_count;
+END;
+/
+
 
 -- VII. TEST CASE
