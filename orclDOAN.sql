@@ -299,10 +299,10 @@ END BEFORE STATEMENT;
 BEFORE EACH ROW IS
 BEGIN
     IF g_loaded = FALSE THEN
-            SELECT NVL(MAX(MaLogHaiTrinh), 0)
-                INTO max_stt
-                FROM LOG_HAI_TRINH
-                WHERE MaChuyenDanhBat = :NEW.MaChuyenDanhBat;
+    SELECT NVL(MAX(MaLogHaiTrinh), 0)
+    INTO max_stt
+    FROM LOG_HAI_TRINH
+    WHERE MaChuyenDanhBat = :NEW.MaChuyenDanhBat;
 
             g_loaded := TRUE;
     END IF;
@@ -330,10 +330,10 @@ END BEFORE STATEMENT;
 BEFORE EACH ROW IS
 BEGIN
     IF g_loaded = FALSE THEN
-        SELECT NVL(MAX(MaLogDuongDi), 0)
-            INTO max_stt
-            FROM LOG_DUONG_DI_BAO
-            WHERE MaBao = :NEW.MaBao;
+    SELECT NVL(MAX(MaLogDuongDi), 0)
+    INTO max_stt
+    FROM LOG_DUONG_DI_BAO
+    WHERE MaBao = :NEW.MaBao;
 
         g_loaded := TRUE;
     END IF;
@@ -361,10 +361,10 @@ END BEFORE STATEMENT;
 BEFORE EACH ROW IS
 BEGIN
     IF g_loaded = FALSE THEN
-        SELECT NVL(MAX(MaMeCa), 0)
-            INTO max_stt
-            FROM ME_CA
-            WHERE MaChuyenDanhBat = :NEW.MaChuyenDanhBat;
+    SELECT NVL(MAX(MaMeCa), 0)
+    INTO max_stt
+    FROM ME_CA
+    WHERE MaChuyenDanhBat = :NEW.MaChuyenDanhBat;
 
         g_loaded := TRUE;
     END IF;
@@ -730,14 +730,14 @@ END;
 
 
 
---Ma Chu tau co duoc doi khong ? 
+
 CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_tau_ca(
     p_MaTauCa            NVARCHAR2,
     p_LoaiTau            NVARCHAR2,
     p_ChieuDai           NUMBER,
     p_CongSuat           NUMBER,
     p_NamDongTau         INTEGER,
-    --p_MaChuTau           NVARCHAR2 NOT NULL,
+    
     p_MaNgheChinh        NVARCHAR2
 )
 IS
@@ -755,16 +755,47 @@ END;
 CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ngu_truong(
     p_MaNguTruong         NVARCHAR2,
     p_TenNguTruong        NVARCHAR2,
-    p_ViTri               SDO_GEOMETRY,
+    p_XY_DS               SYS.ODCINUMBERLIST,
+    p_SRID                NUMBER,
     p_SoLuongTauHienTai   INTEGER,
     p_SoLuongTauToiDa     INTEGER
 )
 IS 
+    v_ViTri SDO_GEOMETRY;
 BEGIN
+    v_ViTri := SDO_GEOMETRY(
+        2003, -- Geometry type (2003 for 2D) 
+        NULL, --he quy chieu khong gian 
+        NULL, --sdo_point--dung cho diem don lele
+        SDO_ELEM_INFO_ARRAY(1, 1003, 1),--(mang thong tin cau tructruc) 1 vi tri bat dau, 1003 la polygon vong ngoai,1 noi cac dinh bang duong htanghtang
+        SDO_ORDINATE_ARRAY()  --khai bao mang rong 
+    );
+    --Kiem tra so luong toa do hop le
+    v_Count := p_XY_DS.COUNT;
+    IF MOD(v_Count, 2) != 0 THEN
+    RAISE_APPLICATION_ERROR(-20002,'Danh sach toa do khong hop le');
+    END IF;
+
+    --Kiem tra toa do dau va cuoi cung co trung nhau khongkhong
+    IF (p_XY_DS(1)    != p_XY_DS(v_Count - 1)) OR
+       (p_XY_DS(2)    != p_XY_DS(v_Count    )) THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Polygon khong khep kin: diem dau va diem cuoi phai trung nhau.');
+    END IF;
+
+    --Gan toa do vao v_ViTri
+    v_ViTri.SDO_ORDINATES := p_XY_DS;
+    --Gan SRID vao v_ViTri
+    v_ViTri.SDO_SRID := p_SRID;
+    --Update thong tin ngu truong
     UPDATE NGU_TRUONG
-    SET TenNguTruong = p_TenNguTruong,ViTri=p_ViTri,SoLuongTauHienTai = p_SoLuongTauHienTai,SoLuongTauToiDa = p_SoLuongTauToiDa
+    SET TenNguTruong = p_TenNguTruong,ViTri=v_ViTri,SoLuongTauHienTai = p_SoLuongTauHienTai,SoLuongTauToiDa = p_SoLuongTauToiDa
     WHERE MANGUTRUONG = p_MaNguTruong;
 
+    EXCEPTION
+    WHEN OTHERS THEN
+        -- In thông báo lỗi ra màn hình, rồi kết thúc thủ tục
+        DBMS_OUTPUT.PUT_LINE('ERROR: ' || SQLERRM);
+        RETURN;
 END;
 /
 --theo doi trang thai
@@ -819,17 +850,18 @@ CREATE OR REPLACE PROCEDURE truy_xuat_nhat_ky_danh_bat(
 IS
 BEGIN
     OPEN nhat_ky_cursor FOR 
-        SELECT ct.HOTEN,
-                tc.MATAUCA,tc.SODANGKY,tc.LOAITAU,tc.CHIEUDAI,tc.CONGSUAT,
-                cdb.MACHUYENDANHBAT,cdb.NGAYCAPBEN,cdb.NGAYXUATBEN,cdb.CANGDI,cdb.CANGVE,
-                ng.TENNGHE
-        FROM TAU_CA tc 
-        JOIN CHU_TAU ct on tc.MaChuTau = ct.MaChuTau
-        JOIN CHUYEN_DANH_BAT cdb on tc.MaTauCa = cdb.MaChuTau
-        JOIN TAU_NGHE t_n on t_n.MaTauCa = tc.MaTauCa
-        JOIN NGHE ng on t_n.MaNghe = ng.MaNghe
+        SELECT 
+            ct.HoTen,
+            tc.MaTauCa, tc.SoDangKy, tc.LoaiTau, tc.ChieuDai, tc.CongSuat,
+            cdb.MaChuyenDanhBat, cdb.NgayCapBen, cdb.NgayXuatBen, cdb.CangDi, cdb.CangVe,
+            ng.TenNghe
+        FROM TAU_CA tc
+        JOIN CHU_TAU ct ON tc.MaChuTau = ct.MaChuTau
+        JOIN CHUYEN_DANH_BAT cdb ON tc.MaTauCa = cdb.MaTauCa
+        LEFT JOIN TAU_NGHE t_n ON t_n.MaTauCa = tc.MaTauCa
+        LEFT JOIN NGHE ng ON t_n.MaNghe = ng.MaNghe
         WHERE tc.MaTauCa = p_MaTauCa;
- END;   
+END;
 /
 
 --Thong ke
@@ -889,6 +921,39 @@ BEGIN
     OPEN bao_cursor FOR
         SELECT * FROM LOG_DUONG_DI_BAO b
         WHERE b.MABAO = p_MaBao;
+END;
+
+--Thuy san
+CREATE OR REPLACE PROCEDURE thong_ke_so_luong_thuy_san(
+    thuy_san_cursor OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN thuy_san_cursor FOR
+        SELECT * FROM THUY_SAN;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE thong_ke_so_luong_thuy_san_theo_loai(
+    thuy_san_cursor OUT SYS_REFCURSOR,
+    p_TenLoaiThuySan NVARCHAR2
+)
+IS
+BEGIN
+    OPEN thuy_san_cursor FOR
+        SELECT * FROM THUY_SAN ts
+        WHERE ts.TenLoaiThuySan = p_TenLoaiThuySan;
+END;
+
+CREATE OR REPLACE PROCEDURE thong_ke_so_luong_thuy_san_theo_ma(
+    thuy_san_cursor OUT SYS_REFCURSOR,
+    p_MaThuySan NVARCHAR2
+)
+IS
+BEGIN
+    OPEN thuy_san_cursor FOR
+        SELECT * FROM THUY_SAN ts
+        WHERE ts.MaThuySan = p_MaThuySan;
 END;
 -- VI. CREATE FUNCTION
 
@@ -1040,3 +1105,8 @@ END;
 
 
 -- VII. TEST CASE
+
+--Lay danh sach tau cua chu tau
+VAR c REFCURSOR;
+EXEC Hien_thi_danh_sach_tau_ca_cua_chu_tau(:c, 'MACHUTAU01');
+PRINT c;
