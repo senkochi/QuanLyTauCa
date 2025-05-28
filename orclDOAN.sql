@@ -239,7 +239,7 @@ END;
 /
 
 -- 7. FOR NGU_TRUONG
-CREATE SEQUENCE NGU_TRUONG
+CREATE SEQUENCE SEQ_NGU_TRUONG
     START WITH 1
     INCREMENT BY 1
     NOCACHE
@@ -254,7 +254,7 @@ END;
 /
 
 -- 8. FOR THOI_TIET
-CREATE SEQUENCE THOI_TIET
+CREATE SEQUENCE SEQ_THOI_TIET
     START WITH 1
     INCREMENT BY 1
     NOCACHE
@@ -269,7 +269,7 @@ END;
 /
 
 -- 9. FOR BAO
-CREATE SEQUENCE BAO
+CREATE SEQUENCE SEQ_BAO
     START WITH 1
     INCREMENT BY 1
     NOCACHE
@@ -660,6 +660,7 @@ BEGIN
     WHERE MACHUTAU = p_MaChuTau;
 END;
 /
+
 --duyet thong tin tau ca
 CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ho_so_tau_ca(
     p_trangthai NVARCHAR2,
@@ -679,13 +680,13 @@ CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ho_so_chuyen_danh_bat(
 )
 IS
 BEGIN
-    IF p_trangthaiduyet = 'DUYET' THEN
+    IF p_trangthaiduyet = 'DA DUYET' THEN
         UPDATE CHUYEN_DANH_BAT
         SET TRANGTHAIDUYET = p_trangthaiduyet
         WHERE MACHUYENDANHBAT = p_MaChuyenDanhBat;
     ELSE
         UPDATE CHUYEN_DANH_BAT
-        SET TRANGTHAIDUYET = p_trangthaiduyet, TRANGTHAIHOATDONG = "DANG CHO|DA DK"
+        SET TRANGTHAIDUYET = p_trangthaiduyet, TRANGTHAIHOATDONG = 'DANG CHO|DA DK'
         WHERE MACHUYENDANHBAT = p_MaChuyenDanhBat;
     END IF;
 END;
@@ -697,7 +698,7 @@ CREATE OR REPLACE PROCEDURE cap_nhat_trang_thai_roi_cang(
 IS
 BEGIN
     UPDATE TAU_CA
-    SET TRANGTHAIHOATDONG = "DANG HOAT DONG"
+    SET TRANGTHAIHOATDONG = 'DANG HOAT DONG'
     WHERE MATAUCA = p_MaTauCa;
 END;
 /
@@ -708,7 +709,7 @@ CREATE OR REPLACE PROCEDURE cap_nhat_trang_thai_cap_cang(
 IS
 BEGIN
     UPDATE TAU_CA
-    SET TRANGTHAIHOATDONG = "DANG CHO|CHUA DK"
+    SET TRANGTHAIHOATDONG = 'DANG CHO|CHUA DK'
     WHERE MATAUCA = p_MaTauCa;
 END;
 /
@@ -762,6 +763,7 @@ CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ngu_truong(
 )
 IS 
     v_ViTri SDO_GEOMETRY;
+    v_Count INTEGER;
 BEGIN
     v_ViTri := SDO_GEOMETRY(
         2003, -- Geometry type (2003 for 2D) 
@@ -1108,5 +1110,5 @@ END;
 
 --Lay danh sach tau cua chu tau
 VAR c REFCURSOR;
-EXEC Hien_thi_danh_sach_tau_ca_cua_chu_tau(:c, 'MACHUTAU01');
+EXEC Hien_thi_danh_sach_tau_ca_cua_chu_tau(:c, 'USER01');
 PRINT c;
