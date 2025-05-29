@@ -307,8 +307,9 @@ BEGIN
             g_loaded := TRUE;
     END IF;
 
-    :NEW.MaLogHaiTrinh := max_stt + 1;
     max_stt := max_stt + 1;
+    :NEW.MaLogHaiTrinh := max_stt;
+    
 END BEFORE EACH ROW;
 
 END TRG_CREATE_SEQ_LOG_HAI_TRINH;
@@ -338,8 +339,9 @@ BEGIN
         g_loaded := TRUE;
     END IF;
 
-    :NEW.MaLogDuongDi := max_stt + 1;
     max_stt := max_stt + 1;
+    :NEW.MaLogDuongDi := max_stt;
+    
 END BEFORE EACH ROW;
 
 END TRG_CREATE_SEQ_LOG_DUONG_DI_BAO;
@@ -369,8 +371,9 @@ BEGIN
         g_loaded := TRUE;
     END IF;
 
-    :NEW.MaMeCa := max_stt + 1;
     max_stt := max_stt + 1;
+    :NEW.MaMeCa := max_stt;
+
 END BEFORE EACH ROW;
 
 END TRG_CREATE_SEQ_ME_CA;
@@ -420,19 +423,26 @@ ALTER TABLE LOG_DUONG_DI_BAO ADD CONSTRAINT FK_LOG_DUONG_DI_BAO_1 FOREIGN KEY (M
 
 -- V. CREATE PROCEDURE
 
---tao user moi
+--tao chu tau moi
 CREATE OR REPLACE PROCEDURE tao_chu_tau_moi(
-    p_USER_ID        NVARCHAR2,
-    p_USERNAME       NVARCHAR2,
-    p_PASSWORD       NVARCHAR2
+    p_USERNAME      NVARCHAR2,
+    p_PASSWORD      NVARCHAR2,
+    p_MaChuTau      NVARCHAR2,
+    p_HoTen         NVARCHAR2,
+    p_SDT           NVARCHAR2,
+    p_DiaChi        NVARCHAR2,
+    p_CCCD          NVARCHAR2,
+    v_Count         INTEGER
 )
 IS
 BEGIN
     INSERT INTO APP_USER(USER_ID,USERNAME,PASSWORD)
-    VALUES(p_USER_ID,p_USERNAME,p_PASSWORD);
+    VALUES(SEQ_APP_USER.NEXTVAL,p_USERNAME,p_PASSWORD);
 
+    INSERT INTO CHU_TAU(MaChuTau,HoTen,SDT,DiaChi,CCCD)
+    VALUES(SEQ_APP_USER.CURRVAL,p_MaChuTau,p_HoTen,p_SDT,p_DiaChi,p_CCCD);
     COMMIT;
-
+    
     EXCEPTION
     WHEN OTHERS THEN
     ROLLBACK;
@@ -441,6 +451,7 @@ BEGIN
 END;
 /
 
+--tao admin
 CREATE OR REPLACE PROCEDURE tao_admin_moi(
     p_MaAdmin        NVARCHAR2,
     p_HoTen          NVARCHAR2,
