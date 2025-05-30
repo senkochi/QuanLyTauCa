@@ -442,7 +442,7 @@ BEGIN
     INSERT INTO CHU_TAU(MaChuTau,HoTen,SDT,DiaChi,CCCD)
     VALUES(SEQ_APP_USER.CURRVAL,p_MaChuTau,p_HoTen,p_SDT,p_DiaChi,p_CCCD);
     COMMIT;
-    
+
     EXCEPTION
     WHEN OTHERS THEN
     ROLLBACK;
@@ -456,12 +456,19 @@ CREATE OR REPLACE PROCEDURE tao_admin_moi(
     p_MaAdmin        NVARCHAR2,
     p_HoTen          NVARCHAR2,
     p_CoQuan         NVARCHAR2,
-    p_CCCD           NVARCHAR2 
+    p_CCCD           NVARCHAR2,
+    p_USERNAME       NVARCHAR2,
+    p_PASSWORD       NVARCHAR2,
+    p_ROLE           APP_USER.ROLE%TYPE
 )
 IS
 BEGIN
+
+    INSERT INTO APP_USER(USER_ID,USERNAME,PASSWORD)
+    VALUES(SEQ_APP_USER.NEXTVAL,p_USERNAME,p_PASSWORD);
+
     INSERT INTO ADMIN(MaAdmin,HoTen,CoQuan,CCCD)
-    VALUES(p_MaAdmin,p_HoTen,p_CoQuan,p_CCCD);
+    VALUES(SEQ_APP_USER.CURRVAL,p_HoTen,p_CoQuan,p_CCCD);
 
     COMMIT;
 
@@ -471,6 +478,7 @@ BEGIN
         RAISE;
 END;
 /
+
 --Hien thi danh sach
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_chu_tau(
     chu_tau_cursor OUT SYS_REFCURSOR)
@@ -480,18 +488,20 @@ BEGIN
         SELECT* FROM CHU_TAU;
 END;
 /
+
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca (
     p_cursor OUT SYS_REFCURSOR
-) IS
+) 
+IS
 BEGIN
     OPEN p_cursor FOR
         SELECT * FROM TAU_CA;
 END;
 /
+
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_cua_chu_tau(
     p_cursor OUT SYS_REFCURSOR,
     p_MaChuTau  NVARCHAR2
-    
 )
 IS
 BEGIN
@@ -503,6 +513,7 @@ EXCEPTION
         RAISE;
 END;
 /
+
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_dang_hoat_dong_cua_chu_tau(
     p_cursor OUT SYS_REFCURSOR,
     p_MaChuTau  NVARCHAR2
@@ -519,7 +530,6 @@ EXCEPTION
 END;
 /
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_dang_hoat_dong(
-    
     p_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -532,10 +542,10 @@ EXCEPTION
         RAISE;
 END;
 /
+
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_chuyen_danh_bat_cua_tau(
     tau_ca_cursor OUT SYS_REFCURSOR,
     p_MaTauCa NVARCHAR2
-    
 )
 IS
 BEGIN
@@ -570,6 +580,7 @@ BEGIN
 
 END;
 /
+
 --Dang Ky 
 
 CREATE OR REPLACE PROCEDURE Them_Chu_Tau(
