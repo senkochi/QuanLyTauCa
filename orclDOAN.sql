@@ -422,38 +422,6 @@ ALTER TABLE LOG_DUONG_DI_BAO ADD CONSTRAINT FK_LOG_DUONG_DI_BAO_1 FOREIGN KEY (M
 
 -- V. CREATE PROCEDURE
 
--- Tao chu tau
-CREATE OR REPLACE PROCEDURE INSERT_CHU_TAU_MOI(
-    p_USERNAME      APP_USER.USERNAME%TYPE,
-    p_PASSWORD      APP_USER.PASSWORD%TYPE,
-    p_HoTen         CHU_TAU.HoTen%TYPE,
-    p_SDT           CHU_TAU.SDT%TYPE,
-    p_DiaChi        CHU_TAU.DiaChi%TYPE,
-    p_CCCD          CHU_TAU.CCCD%TYPE
-)
-IS
-    p_MaChuTau      CHU_TAU.MaChuTau%TYPE;
-BEGIN
-    INSERT INTO APP_USER(USERNAME, PASSWORD)
-    VALUES(p_USERNAME, p_PASSWORD);
-
-    SELECT USER_ID
-    INTO p_MaChuTau
-    FROM APP_USER
-    WHERE USERNAME = p_USERNAME;
-
-    INSERT INTO CHU_TAU(MaChuTau, HoTen, SDT, DiaChi, CCCD)
-    VALUES(p_MaChuTau, p_HoTen, p_SDT, p_DiaChi, p_CCCD);
-    COMMIT;
-
-    EXCEPTION
-    WHEN OTHERS THEN
-        ROLLBACK;
-        RAISE;
-
-END;
-/
-
 -- Tao admin
 CREATE OR REPLACE PROCEDURE INSERT_ADMIN_MOI(
     p_USERNAME      APP_USER.USERNAME%TYPE,
@@ -486,20 +454,53 @@ END;
 /
 
 --1 THONG TIN DANG KY 
---Dang Ky 
 
-CREATE OR REPLACE PROCEDURE Them_Chu_Tau(
-    p_MaChuTau        NVARCHAR2,
-    p_HoTen           NVARCHAR2,
-    p_SDT             NVARCHAR2,
-    p_DiaChi          NVARCHAR2,
-    p_CCCD            NVARCHAR2
-    
+-- Tao chu tau
+CREATE OR REPLACE PROCEDURE INSERT_CHU_TAU_MOI(
+    p_USERNAME      APP_USER.USERNAME%TYPE,
+    p_PASSWORD      APP_USER.PASSWORD%TYPE,
+    p_HoTen         CHU_TAU.HoTen%TYPE,
+    p_SDT           CHU_TAU.SDT%TYPE,
+    p_DiaChi        CHU_TAU.DiaChi%TYPE,
+    p_CCCD          CHU_TAU.CCCD%TYPE
+)
+IS
+    p_MaChuTau      CHU_TAU.MaChuTau%TYPE;
+BEGIN
+    INSERT INTO APP_USER(USERNAME, PASSWORD)
+    VALUES(p_USERNAME, p_PASSWORD);
+
+    SELECT USER_ID
+    INTO p_MaChuTau
+    FROM APP_USER
+    WHERE USERNAME = p_USERNAME;
+
+    INSERT INTO CHU_TAU(MaChuTau, HoTen, SDT, DiaChi, CCCD)
+    VALUES(p_MaChuTau, p_HoTen, p_SDT, NULLIF(TRIM(p_DiaChi), ''), p_CCCD);
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+
+END;
+/
+
+-- Tao TAU_CA
+CREATE OR REPLACE PROCEDURE INSERT_TAU_CA(
+    p_SoDangKy           TAU_CA.SoDangKy%TYPE,
+    p_LoaiTau            TAU_CA.LoaiTau%TYPE,
+    p_ChieuDai           TAU_CA.ChieuDai%TYPE,
+    p_CongSuat           TAU_CA.CongSuat%TYPE,
+    p_NamDongTau         TAU_CA.NamDongTau%TYPE,
+    p_MaChuTau           TAU_CA.MaChuTau%TYPE,
+    p_MaNgheChinh        TAU_CA.MaNgheChinh%TYPE
 )
 IS
 BEGIN
-    INSERT INTO CHU_TAU(MaChuTau,HoTen,SDT,DiaChi,CCCD)
-    VALUES(p_MaChuTau,p_HoTen,p_SDT,NULLIF(TRIM(p_DiaChi), ''),p_CCCD);
+    INSERT INTO TAU_CA(SoDangKy, LoaiTau, ChieuDai, CongSuat, NamDongTau, MaChuTau, MaNgheChinh)
+    VALUES (p_SoDangKy, p_LoaiTau, p_ChieuDai, p_CongSuat, p_NamDongTau, p_MaChuTau, p_MaNgheChinh);
 
     COMMIT;
 
@@ -510,30 +511,9 @@ BEGIN
 END;
 /
 
-CREATE OR REPLACE PROCEDURE Them_tau_ca(
-    p_MaTauCa            NVARCHAR2,
-    p_SoDangKy           NVARCHAR2,
-    p_LoaiTau            NVARCHAR2,
-    p_ChieuDai           NUMBER,
-    p_CongSuat           NUMBER,
-    p_NamDongTau         INTEGER,
-    p_MaChuTau           NVARCHAR2,
-    p_MaNgheChinh        NVARCHAR2
+-- DA XEM DEN DAY
 
-)
-IS
-BEGIN
-    INSERT INTO TAU_CA(MaTauCa,SoDangKy,LoaiTau,ChieuDai,CongSuat,NamDongTau,MaChuTau,MaNgheChinh)
-    VALUES (p_MaTauCa, p_SoDangKy, p_LoaiTau, p_ChieuDai,p_CongSuat,p_NamDongTau,p_MaChuTau,p_MaNgheChinh);
-
-    COMMIT;
-
-    EXCEPTION
-    WHEN OTHERS THEN
-        ROLLBACK;
-        RAISE;
-END;
-/
+-- Lay danh sach CHU_TAU
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_chu_tau(
     chu_tau_cursor OUT SYS_REFCURSOR)
 IS
@@ -542,18 +522,22 @@ BEGIN
         SELECT* FROM CHU_TAU;
 END;
 /
+
+-- Lay danh sach TAU_CA
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca (
     p_cursor OUT SYS_REFCURSOR
-) IS
+) 
+IS
 BEGIN
     OPEN p_cursor FOR
         SELECT * FROM TAU_CA;
 END;
 /
+
+-- Lay danh sach TAU_CA cua CHU_TAU
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_cua_chu_tau(
     p_cursor OUT SYS_REFCURSOR,
     p_MaChuTau  NVARCHAR2
-    
 )
 IS
 BEGIN
@@ -565,9 +549,10 @@ EXCEPTION
         RAISE;
 END;
 /
---Cap nhat ho so
---duyet thong tin chu tautau
-CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ho_so_chu_tau(
+
+-- Cap nhat ho so
+-- duyet thong tin chu tautau
+CREATE OR REPLACE PROCEDURE UPDATE_CHU_TAU(
     p_trangthai NVARCHAR2,
     p_MaChuTau NVARCHAR2
 )
