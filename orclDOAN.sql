@@ -479,108 +479,7 @@ BEGIN
 END;
 /
 
---Hien thi danh sach
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_chu_tau(
-    chu_tau_cursor OUT SYS_REFCURSOR)
-IS
-BEGIN
-    OPEN chu_tau_cursor FOR
-        SELECT* FROM CHU_TAU;
-END;
-/
-
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca (
-    p_cursor OUT SYS_REFCURSOR
-) 
-IS
-BEGIN
-    OPEN p_cursor FOR
-        SELECT * FROM TAU_CA;
-END;
-/
-
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_cua_chu_tau(
-    p_cursor OUT SYS_REFCURSOR,
-    p_MaChuTau  NVARCHAR2
-)
-IS
-BEGIN
-    OPEN p_cursor FOR
-        SELECT * FROM TAU_CA t WHERE t.MaChuTau = p_MaChuTau;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
-END;
-/
-
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_dang_hoat_dong_cua_chu_tau(
-    p_cursor OUT SYS_REFCURSOR,
-    p_MaChuTau  NVARCHAR2
-    
-)
-IS
-BEGIN
-    OPEN p_cursor FOR
-        SELECT * FROM TAU_CA t WHERE t.MaChuTau = p_MaChuTau AND t.TRANGTHAIHOATDONG ='DANG HOAT DONG';
-
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
-END;
-/
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_dang_hoat_dong(
-    p_cursor OUT SYS_REFCURSOR
-)
-IS
-BEGIN
-    OPEN p_cursor FOR
-        SELECT * FROM TAU_CA t WHERE t.TRANGTHAIHOATDONG ='DANG HOAT DONG';
-
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
-END;
-/
-
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_chuyen_danh_bat_cua_tau(
-    tau_ca_cursor OUT SYS_REFCURSOR,
-    p_MaTauCa NVARCHAR2
-)
-IS
-BEGIN
-    OPEN tau_ca_cursor FOR
-        SELECT * FROM CHUYEN_DANH_BAT cdb 
-        WHERE cdb.MaTauCa = p_MaTauCa;
-
-    EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
-END;
-/
-
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_cac_ngu_truong(
-    ngu_truong_cursor OUT SYS_REFCURSOR
-)
-IS
-BEGIN
-    OPEN ngu_truong_cursor FOR
-        SELECT ng.MANGUTRUONG,ng.TENNGUTRUONG FROM NGU_TRUONG ng;
-END;
-/
-
-CREATE OR REPLACE PROCEDURE Hien_thi_ngu_truong(
-    ngu_truong_cursor OUT SYS_REFCURSOR,
-    p_MaNguTruong NVARCHAR2
-)
-IS
-BEGIN
-    OPEN ngu_truong_cursor FOR
-        SELECT* FROM NGU_TRUONG ng WHERE ng.MANGUTRUONG = p_MaNguTruong; 
-
-END;
-/
-
+--1 THONG TIN DANG KY 
 --Dang Ky 
 
 CREATE OR REPLACE PROCEDURE Them_Chu_Tau(
@@ -629,6 +528,133 @@ BEGIN
         RAISE;
 END;
 /
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_chu_tau(
+    chu_tau_cursor OUT SYS_REFCURSOR)
+IS
+BEGIN
+    OPEN chu_tau_cursor FOR
+        SELECT* FROM CHU_TAU;
+END;
+/
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca (
+    p_cursor OUT SYS_REFCURSOR
+) IS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT * FROM TAU_CA;
+END;
+/
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_cua_chu_tau(
+    p_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau  NVARCHAR2
+    
+)
+IS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT * FROM TAU_CA t WHERE t.MaChuTau = p_MaChuTau;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
+--Cap nhat ho so
+--duyet thong tin chu tautau
+CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ho_so_chu_tau(
+    p_trangthai NVARCHAR2,
+    p_MaChuTau NVARCHAR2
+)
+IS
+BEGIN
+    UPDATE CHU_TAU
+    SET TRANGTHAIDUYET = p_trangthai
+    WHERE MACHUTAU = p_MaChuTau;
+END;
+/
+
+--duyet thong tin tau ca
+CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ho_so_tau_ca(
+    p_trangthai NVARCHAR2,
+    p_MaTauCa NVARCHAR2
+)
+IS
+BEGIN
+    UPDATE TAU_CA
+    SET TRANGTHAIDUYET = p_trangthai
+    WHERE MATAUCA = p_MaTauCa;
+END;
+/
+
+
+
+
+CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_chu_tau(
+    p_MaChuTau        NVARCHAR2,
+    p_HoTen           NVARCHAR2,
+    p_SDT             NVARCHAR2,
+    p_DiaChi          NVARCHAR2,
+    p_CCCD            NVARCHAR2
+)
+IS
+BEGIN
+    UPDATE CHU_TAU
+    SET HoTen = p_HoTen, SDT = p_SDT, DiaChi = p_DiaChi, CCCD = p_CCCD, TrangThaiDuyet = 'DANG CHO'
+    WHERE p_MaChuTau = MaChuTau;
+END;
+/
+
+
+
+
+CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_tau_ca(
+    p_MaTauCa            NVARCHAR2,
+    p_LoaiTau            NVARCHAR2,
+    p_ChieuDai           NUMBER,
+    p_CongSuat           NUMBER,
+    p_NamDongTau         INTEGER,
+    
+    p_MaNgheChinh        NVARCHAR2
+)
+IS
+BEGIN
+    UPDATE TAU_CA
+    SET LoaiTau = p_LoaiTau, ChieuDai = p_ChieuDai, CongSuat = p_CongSuat, NamDongTau = p_NamDongTau,
+    TrangThaiDuyet = 'DANG CHO', MaNgheChinh = p_MaNgheChinh
+    WHERE MaTauCa = p_MaTauCa;
+
+END;
+/
+--theo doi trang thai
+
+CREATE OR REPLACE PROCEDURE theo_doi_ho_so_Chu_Tau(
+     chu_tau_cursor OUT SYS_REFCURSOR,
+     p_MaChuTau NVARCHAR2
+   
+)
+IS
+BEGIN
+    OPEN chu_tau_cursor FOR
+        SELECT *
+        FROM CHU_TAU ct
+        WHERE ct.MACHUTAU = p_MaChuTau;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE theo_doi_ho_so_tau_ca(
+    p_MaChuTau NVARCHAR2,
+    tau_ca_cursor OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN tau_ca_cursor FOR
+    SELECT * 
+    FROM TAU_CA tc
+    WHERE tc.MACHUTAU = p_MaChuTau;
+END;
+/
+--2.HOAT DONG DANH BATBAT
+-- duyet thong tin chuyen danh bat
 
 CREATE OR REPLACE PROCEDURE Them_Chuyen_Danh_Bat(
     p_MaChuyenDanhBat     NVARCHAR2,
@@ -669,33 +695,6 @@ EXCEPTION
 END;
 /
 
---Cap nhat ho so
---duyet thong tin chu tautau
-CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ho_so_chu_tau(
-    p_trangthai NVARCHAR2,
-    p_MaChuTau NVARCHAR2
-)
-IS
-BEGIN
-    UPDATE CHU_TAU
-    SET TRANGTHAIDUYET = p_trangthai
-    WHERE MACHUTAU = p_MaChuTau;
-END;
-/
-
---duyet thong tin tau ca
-CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ho_so_tau_ca(
-    p_trangthai NVARCHAR2,
-    p_MaTauCa NVARCHAR2
-)
-IS
-BEGIN
-    UPDATE TAU_CA
-    SET TRANGTHAIDUYET = p_trangthai
-    WHERE MATAUCA = p_MaTauCa;
-END;
-/
--- duyet thong tin chuyen danh bat
 CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ho_so_chuyen_danh_bat(
     p_trangthaiduyet NVARCHAR2,
     p_MaChuyenDanhBat NVARCHAR2
@@ -714,6 +713,22 @@ BEGIN
 END;
 /
 
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_chuyen_danh_bat_cua_tau(
+    tau_ca_cursor OUT SYS_REFCURSOR,
+    p_MaTauCa NVARCHAR2
+    
+)
+IS
+BEGIN
+    OPEN tau_ca_cursor FOR
+        SELECT * FROM CHUYEN_DANH_BAT cdb 
+        WHERE cdb.MaTauCa = p_MaTauCa;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
 CREATE OR REPLACE PROCEDURE cap_nhat_trang_thai_roi_cang(
     p_MaTauCa NVARCHAR2
 )
@@ -736,45 +751,74 @@ BEGIN
 END;
 /
 
-CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_chu_tau(
-    p_MaChuTau        NVARCHAR2,
-    p_HoTen           NVARCHAR2,
-    p_SDT             NVARCHAR2,
-    p_DiaChi          NVARCHAR2,
-    p_CCCD            NVARCHAR2
+CREATE OR REPLACE PROCEDURE truy_xuat_nguon_goc_hai_san(
+    thuy_san_cursor OUT SYS_REFCURSOR,
+    p_MaThuySan NVARCHAR2
 )
 IS
 BEGIN
-    UPDATE CHU_TAU
-    SET HoTen = p_HoTen, SDT = p_SDT, DiaChi = p_DiaChi, CCCD = p_CCCD, TrangThaiDuyet = 'DANG CHO'
-    WHERE p_MaChuTau = MaChuTau;
+    OPEN thuy_san_cursor FOR
+        SELECT mc.VITRIKEOLUOI,mc.THOIGIANKEOLUOI,mc.THOIGIANTHALUOI
+        FROM DANHBAT_THUYSAN dbts 
+        JOIN ME_CA mc on dbts.MaMeCa = mc.MaMeCa
+        WHERE dbts.MaThuySan = p_MaThuySan;
+END;
+/
+--Truy xuat nhat ky danh bat
+--khong hieu nghe ra sao ???
+CREATE OR REPLACE PROCEDURE truy_xuat_nhat_ky_danh_bat(
+    nhat_ky_cursor OUT SYS_REFCURSOR,
+    p_MaTauCa NVARCHAR2 
+)
+IS
+BEGIN
+    OPEN nhat_ky_cursor FOR 
+        SELECT 
+            ct.HoTen,
+            tc.MaTauCa, tc.SoDangKy, tc.LoaiTau, tc.ChieuDai, tc.CongSuat,
+            cdb.MaChuyenDanhBat, cdb.NgayCapBen, cdb.NgayXuatBen, cdb.CangDi, cdb.CangVe,
+            ng.TenNghe
+        FROM TAU_CA tc
+        JOIN CHU_TAU ct ON tc.MaChuTau = ct.MaChuTau
+        JOIN CHUYEN_DANH_BAT cdb ON tc.MaTauCa = cdb.MaTauCa
+        LEFT JOIN TAU_NGHE t_n ON t_n.MaTauCa = tc.MaTauCa
+        LEFT JOIN NGHE ng ON t_n.MaNghe = ng.MaNghe
+        WHERE tc.MaTauCa = p_MaTauCa;
 END;
 /
 
-
-
-
-CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_tau_ca(
-    p_MaTauCa            NVARCHAR2,
-    p_LoaiTau            NVARCHAR2,
-    p_ChieuDai           NUMBER,
-    p_CongSuat           NUMBER,
-    p_NamDongTau         INTEGER,
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_dang_hoat_dong_cua_chu_tau(
+    p_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau  NVARCHAR2
     
-    p_MaNgheChinh        NVARCHAR2
 )
 IS
 BEGIN
-    UPDATE TAU_CA
-    SET LoaiTau = p_LoaiTau, ChieuDai = p_ChieuDai, CongSuat = p_CongSuat, NamDongTau = p_NamDongTau,
-    TrangThaiDuyet = 'DANG CHO', MaNgheChinh = p_MaNgheChinh
-    WHERE MaTauCa = p_MaTauCa;
+    OPEN p_cursor FOR
+        SELECT * FROM TAU_CA t WHERE t.MaChuTau = p_MaChuTau AND t.TRANGTHAIHOATDONG ='DANG HOAT DONG';
 
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_dang_hoat_dong(
+    
+    p_cursor OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT * FROM TAU_CA t WHERE t.TRANGTHAIHOATDONG ='DANG HOAT DONG';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
 
-
+--3.NGU TRUONG
 CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ngu_truong(
     p_MaNguTruong         NVARCHAR2,
     p_TenNguTruong        NVARCHAR2,
@@ -822,73 +866,29 @@ BEGIN
         RETURN;
 END;
 /
---theo doi trang thai
-
-CREATE OR REPLACE PROCEDURE theo_doi_ho_so_Chu_Tau(
-     chu_tau_cursor OUT SYS_REFCURSOR,
-     p_MaChuTau NVARCHAR2
-   
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_cac_ngu_truong(
+    ngu_truong_cursor OUT SYS_REFCURSOR
 )
 IS
 BEGIN
-    OPEN chu_tau_cursor FOR
-        SELECT *
-        FROM CHU_TAU ct
-        WHERE ct.MACHUTAU = p_MaChuTau;
+    OPEN ngu_truong_cursor FOR
+        SELECT ng.MANGUTRUONG,ng.TENNGUTRUONG FROM NGU_TRUONG ng;
 END;
 /
 
-CREATE OR REPLACE PROCEDURE theo_doi_ho_so_tau_ca(
-    p_MaChuTau NVARCHAR2,
-    tau_ca_cursor OUT SYS_REFCURSOR
+CREATE OR REPLACE PROCEDURE Hien_thi_ngu_truong(
+    ngu_truong_cursor OUT SYS_REFCURSOR,
+    p_MaNguTruong NVARCHAR2
 )
 IS
 BEGIN
-    OPEN tau_ca_cursor FOR
-    SELECT * 
-    FROM TAU_CA tc
-    WHERE tc.MACHUTAU = p_MaChuTau;
+    OPEN ngu_truong_cursor FOR
+        SELECT* FROM NGU_TRUONG ng WHERE ng.MANGUTRUONG = p_MaNguTruong; 
+
 END;
 /
 
-CREATE OR REPLACE PROCEDURE truy_xuat_nguon_goc_hai_san(
-    thuy_san_cursor OUT SYS_REFCURSOR,
-    p_MaThuySan NVARCHAR2
-)
-IS
-BEGIN
-    OPEN thuy_san_cursor FOR
-        SELECT mc.VITRIKEOLUOI,mc.THOIGIANKEOLUOI,mc.THOIGIANTHALUOI
-        FROM DANHBAT_THUYSAN dbts 
-        JOIN ME_CA mc on dbts.MaMeCa = mc.MaMeCa
-        WHERE dbts.MaThuySan = p_MaThuySan;
-END;
-/
-
---Truy xuat nhat ky danh bat
---khong hieu nghe ra sao ???
-CREATE OR REPLACE PROCEDURE truy_xuat_nhat_ky_danh_bat(
-    nhat_ky_cursor OUT SYS_REFCURSOR,
-    p_MaTauCa NVARCHAR2 
-)
-IS
-BEGIN
-    OPEN nhat_ky_cursor FOR 
-        SELECT 
-            ct.HoTen,
-            tc.MaTauCa, tc.SoDangKy, tc.LoaiTau, tc.ChieuDai, tc.CongSuat,
-            cdb.MaChuyenDanhBat, cdb.NgayCapBen, cdb.NgayXuatBen, cdb.CangDi, cdb.CangVe,
-            ng.TenNghe
-        FROM TAU_CA tc
-        JOIN CHU_TAU ct ON tc.MaChuTau = ct.MaChuTau
-        JOIN CHUYEN_DANH_BAT cdb ON tc.MaTauCa = cdb.MaTauCa
-        LEFT JOIN TAU_NGHE t_n ON t_n.MaTauCa = tc.MaTauCa
-        LEFT JOIN NGHE ng ON t_n.MaNghe = ng.MaNghe
-        WHERE tc.MaTauCa = p_MaTauCa;
-END;
-/
-
---Thong ke
+--4.THONG KE
 
 --Vi pham
 CREATE OR REPLACE PROCEDURE hien_thi_danh_sach_vi_pham(
