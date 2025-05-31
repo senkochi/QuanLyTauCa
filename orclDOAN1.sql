@@ -1,7 +1,6 @@
 -- IV. CREATE TRIGGER
 
 -- V. CREATE PROCEDURE
-
 -- Tao admin
 CREATE OR REPLACE PROCEDURE INSERT_ADMIN_MOI(
     p_USERNAME      APP_USER.USERNAME%TYPE,
@@ -35,6 +34,7 @@ END;
 
 --1 THONG TIN DANG KY 
 
+-- DANG KY THONG TIN CHU_TAU
 -- Tao chu tau
 CREATE OR REPLACE PROCEDURE INSERT_CHU_TAU_MOI(
     p_USERNAME      APP_USER.USERNAME%TYPE,
@@ -67,6 +67,41 @@ BEGIN
 END;
 /
 
+-- DANG KY THONG TIN TAU_CA
+-- Them NGHE moi
+CREATE OR REPLACE PROCEDURE INSERT_TAU_NGHE(
+    p_MaNghe        NGHE.MaNghe%TYPE,
+    p_TenNghe       NGHE.TenNghe%TYPE
+)
+IS
+BEGIN
+    INSERT INTO NGHE(MaNghe, TenNghe)
+    VALUES (p_MaNghe, p_TenNghe);
+
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+
+-- Lay danh sach TAU_CA cua CHU_TAU
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_cua_chu_tau(
+    p_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau   CHU_TAU.MaChuTau%TYPE
+)
+IS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT * FROM TAU_CA t WHERE t.MaChuTau = p_MaChuTau;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
+
 -- Tao TAU_CA
 CREATE OR REPLACE PROCEDURE INSERT_TAU_CA(
     p_SoDangKy           TAU_CA.SoDangKy%TYPE,
@@ -91,9 +126,26 @@ BEGIN
 END;
 /
 
--- DA XEM DEN DAY
+-- Them NGHE cho TAU_CA
+CREATE OR REPLACE PROCEDURE INSERT_TAU_NGHE(
+    p_MaTauCa            TAU_NGHE.MaTauCa%TYPE,
+    p_MaNghe             TAU_NGHE.MaNghe%TYPE,
+    p_VungHoatDong       TAU_NGHE.VungHoatDong%TYPE
+)
+IS
+BEGIN
+    INSERT INTO TAU_NGHE(MaTauCa, MaNghe, VungHoatDong)
+    VALUES (p_MaTauCa, p_MaNghe, p_VungHoatDong);
 
---CAC CON TRO LAY DU LIEU CHI CHON THUOC TINH CAN HIEN THI
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+
+-- DUYET THONG TIN CHU_TAU
 -- Lay danh sach CHU_TAU
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_chu_tau(
     chu_tau_cursor OUT SYS_REFCURSOR
@@ -101,38 +153,12 @@ CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_chu_tau(
 IS
 BEGIN
     OPEN chu_tau_cursor FOR
-        SELECT * FROM CHU_TAU;
+        SELECT * FROM CHU_TAU ct
+        WHERE ct.TrangThaiDuyet = 'DANG CHO';
 END;
 /
 
--- Lay danh sach TAU_CA
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca (
-    p_cursor OUT SYS_REFCURSOR
-) 
-IS
-BEGIN
-    OPEN p_cursor FOR
-        SELECT * FROM TAU_CA;
-END;
-/
-
--- Lay danh sach TAU_CA cua CHU_TAU
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_cua_chu_tau(
-    p_cursor OUT SYS_REFCURSOR,
-    p_MaChuTau   CHU_TAU.MaChuTau%TYPE
-)
-IS
-BEGIN
-    OPEN p_cursor FOR
-        SELECT * FROM TAU_CA t WHERE t.MaChuTau = p_MaChuTau;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
-END;
-/
-
--- Duyet thong tin CHU_TAU
+-- Cap nhat trang thai duyet CHU_TAU
 CREATE OR REPLACE PROCEDURE UPDATE_STATUS_CHU_TAU(
     p_TrangThaiDuyet    CHU_TAU.TrangThaiDuyet%TYPE,
     p_MaChuTau          CHU_TAU.MaChuTau%TYPE
@@ -145,7 +171,20 @@ BEGIN
 END;
 /
 
--- Duyet thong tin TAU_CA
+-- DUYET THONG TIN TAU_CA
+-- Lay danh sach TAU_CA
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca (
+    p_cursor OUT SYS_REFCURSOR
+) 
+IS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT * FROM TAU_CA tc
+        WHERE tc.TrangThaiDuyet = 'DANG CHO';
+END;
+/
+
+-- Cap nhat trang thai duyet TAU_CA
 CREATE OR REPLACE PROCEDURE UPDATE_STATUS_TAU_CA(
     p_TrangThaiDuyet    TAU_CA.TrangThaiDuyet%TYPE,
     p_MaTauCa           TAU_CA.MaTauCa%TYPE
@@ -158,7 +197,8 @@ BEGIN
 END;
 /
 
--- Cap nhat thong tin CHU_TAU
+-- CAP NHAT THONG TIN CHU_TAU
+-- Update CHU_TAU
 CREATE OR REPLACE PROCEDURE UPDATE_CHU_TAU(
     p_MaChuTau        CHU_TAU.MaChuTau%TYPE,
     p_HoTen           CHU_TAU.HoTen%TYPE,
@@ -178,9 +218,11 @@ BEGIN
 END;
 /
 
--- Cap nhat thong tin TAU_CA
+-- CAP NHAT THONG TIN TAU_CA
+-- Update TAU_CA
 CREATE OR REPLACE PROCEDURE UPDATE_TAU_CA(
     p_MaTauCa            TAU_CA.MaTauCa%TYPE,
+    p_SoDangKy           TAU_CA.SoDangKy%TYPE,
     p_LoaiTau            TAU_CA.LoaiTau%TYPE,
     p_ChieuDai           TAU_CA.ChieuDai%TYPE,
     p_CongSuat           TAU_CA.CongSuat%TYPE,
@@ -190,7 +232,8 @@ CREATE OR REPLACE PROCEDURE UPDATE_TAU_CA(
 IS
 BEGIN
     UPDATE TAU_CA
-    SET LoaiTau = p_LoaiTau,
+    SET SoDangKy = p_SoDangKy,
+        LoaiTau = p_LoaiTau,
         ChieuDai = p_ChieuDai,
         CongSuat = p_CongSuat,
         NamDongTau = p_NamDongTau,
@@ -201,8 +244,9 @@ BEGIN
 END;
 /
 
--- Theo doi trang thai duyet CHU_TAU
-CREATE OR REPLACE PROCEDURE theo_doi_ho_so_CHU_TAU(
+-- THEO DOI TRANG THAI DUYET CHU_TAU
+-- Lay trang thai duyet CHU_TAU
+CREATE OR REPLACE PROCEDURE get_status_CHU_TAU(
      chu_tau_cursor OUT SYS_REFCURSOR,
      p_MaChuTau         CHU_TAU.MaChuTau%TYPE
 )
@@ -215,8 +259,9 @@ BEGIN
 END;
 /
 
--- Theo doi trang thai duyet TAU_CA
-CREATE OR REPLACE PROCEDURE theo_doi_ho_so_TAU_CA(
+-- THEO DOI TRANG THAI DUYET TAU_CA
+-- Lay trang thai duyet TAU_CA
+CREATE OR REPLACE PROCEDURE get_status_TAU_CA(
     tau_ca_cursor OUT SYS_REFCURSOR,
     p_MaChuTau        CHU_TAU.MaChuTau%TYPE
 )
