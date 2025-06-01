@@ -260,7 +260,7 @@ END;
 /
 
 -- THEO DOI TRANG THAI DUYET TAU_CA
--- Lay trang thai duyet TAU_CA
+-- Lay danh sau TAU_CA va trang thai duyet TAU_CA
 CREATE OR REPLACE PROCEDURE get_status_TAU_CA(
     tau_ca_cursor OUT SYS_REFCURSOR,
     p_MaChuTau        CHU_TAU.MaChuTau%TYPE
@@ -268,7 +268,7 @@ CREATE OR REPLACE PROCEDURE get_status_TAU_CA(
 IS
 BEGIN
     OPEN tau_ca_cursor FOR
-        SELECT tc.TrangThaiDuyet
+        SELECT tc.MaTauCa, tc.TrangThaiDuyet
         FROM TAU_CA tc
         WHERE tc.MaChuTau = p_MaChuTau;
 END;
@@ -276,23 +276,54 @@ END;
 
 -- 2.HOAT DONG DANH BAT BAT
 
--- Duyet thong tin chuyen danh bat
-
--- Tao chuyen danh bat moi
-CREATE OR REPLACE PROCEDURE INSERT_CHUYEN_DANH_BAT_MOI(
-    p_MaTauCa             NVARCHAR2,
-    p_MaNguTruong         NVARCHAR2
+-- DANG KY THONG TIN CHUYEN DANH BAT
+-- Lay danh sach TAU_CA va trang thai hoat dong TAU_CA
+CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_va_trang_thai_hoat_dong_cua_tau_ca(
+    tau_ca_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau        TAU_CA.p_MaChuTau%TYPE
 )
 IS
 BEGIN
-    INSERT INTO CHUYEN_DANH_BAT(
-        MaTauCa,
-        MaNguTruong
-    )
-    VALUES(
-        p_MaTauCa,
-        p_MaNguTruong
-    );
+    OPEN tau_ca_cursor FOR
+        SELECT tc.MaTauCa, tc.TrangThaiHoatDong 
+        FROM TAU_CA tc 
+        WHERE tc.MaChuTau = p_MaChuTau;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
+
+-- Tao CHUYEN_DANH_BAT
+CREATE OR REPLACE PROCEDURE INSERT_CHUYEN_DANH_BAT_MOI(
+    p_MaTauCa             CHUYEN_DANH_BAT.MaTauCa%TYPE,
+    p_MaNguTruong         CHUYEN_DANH_BAT.MaNguTruong%TYPE
+)
+IS
+    p_TrangThaiDuyetChuTau    CHU_TAU.TrangThaiDuyet%TYPE;
+    p_TrangThaiDuyetTauCa     TAU_CA.TrangThaiDuyet%TYPE;
+    p_TrangThaiHoatDongTauCa     TAU_CA.TrangThaiDuyet%TYPE;
+BEGIN
+    SELECT ct.TrangThaiDuyet, tc.TrangThaiDuyet, tc.TrangThaiHoatDong
+    INTO p_TrangThaiDuyetChuTau, p_TrangThaiDuyetTauCa, p_TrangThaiHoatDongTauCa
+    FROM TAU_CA tc JOIN CHU_TAU ct ON tc.MaChuTau = ct.MACHUTAU
+    WHERE tc.MaTauCa = p_MaTauCa;
+
+    IF p_TrangThaiDuyetChuTau = 'DA DUYET' AND p_TrangThaiDuyetTauCa = 'DA DUYET' AND p_TrangThaiHoatDongTauCa = 'DANG CHO|CHUA DK' THEN
+        INSERT INTO CHUYEN_DANH_BAT(
+            MaTauCa,
+            MaNguTruong
+        )
+        VALUES(
+            p_MaTauCa,
+            p_MaNguTruong
+        );
+    ELSIF p_TrangThaiHoatDongTauCa != 'DANG CHO|CHUA DK' THEN
+        RAISE_APPLICATION_ERROR(-20001, 'TAU DA DUOC DANG KY');
+    ELSE
+        RAISE_APPLICATION_ERROR(-20002, 'HO SO CHU TAU HOAC HO SO TAU CA CHUA DUOC DUYET');
+    END IF;
 
     COMMIT;
 
@@ -322,6 +353,7 @@ BEGIN
 END;
 /
 
+-- CAP NHAT TRANG THAI ROI / CAP CANG
 -- Lay danh sach CHUYEN_DANH_BAT cua TAU_CA
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_chuyen_danh_bat_cua_tau(
     tau_ca_cursor OUT SYS_REFCURSOR,
