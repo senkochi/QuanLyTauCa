@@ -301,16 +301,19 @@ CREATE OR REPLACE PROCEDURE INSERT_CHUYEN_DANH_BAT_MOI(
     p_MaNguTruong         CHUYEN_DANH_BAT.MaNguTruong%TYPE
 )
 IS
-    p_TrangThaiDuyetChuTau    CHU_TAU.TrangThaiDuyet%TYPE;
-    p_TrangThaiDuyetTauCa     TAU_CA.TrangThaiDuyet%TYPE;
-    p_TrangThaiHoatDongTauCa     TAU_CA.TrangThaiDuyet%TYPE;
+    p_TrangThaiDuyetChuTau          CHU_TAU.TrangThaiDuyet%TYPE;
+    p_TrangThaiDuyetTauCa           TAU_CA.TrangThaiDuyet%TYPE;
+    p_TrangThaiHoatDongTauCa        TAU_CA.TrangThaiDuyet%TYPE;
+    p_KtraSoLuongTau                BOOLEAN;
 BEGIN
     SELECT ct.TrangThaiDuyet, tc.TrangThaiDuyet, tc.TrangThaiHoatDong
     INTO p_TrangThaiDuyetChuTau, p_TrangThaiDuyetTauCa, p_TrangThaiHoatDongTauCa
     FROM TAU_CA tc JOIN CHU_TAU ct ON tc.MaChuTau = ct.MACHUTAU
     WHERE tc.MaTauCa = p_MaTauCa;
 
-    IF p_TrangThaiDuyetChuTau = 'DA DUYET' AND p_TrangThaiDuyetTauCa = 'DA DUYET' AND p_TrangThaiHoatDongTauCa = 'DANG CHO|CHUA DK' THEN
+    p_KtraSoLuongTau := Fn_kiem_tra_so_luong_tau(p_MaNguTruong);
+
+    IF p_TrangThaiDuyetChuTau = 'DA DUYET' AND p_TrangThaiDuyetTauCa = 'DA DUYET' AND p_TrangThaiHoatDongTauCa = 'DANG CHO|CHUA DK' AND p_KtraSoLuongTau = TRUE THEN
         INSERT INTO CHUYEN_DANH_BAT(
             MaTauCa,
             MaNguTruong
@@ -319,10 +322,21 @@ BEGIN
             p_MaTauCa,
             p_MaNguTruong
         );
+
+        UPDATE NGU_TRUONG
+        SET SoLuongTauHienTai = SoLuongTauHienTai + 1
+        WHERE MaNguTruong = p_MaNguTruong;
+
+        UPDATE TAU_CA
+        SET TrangThaiHoatDong = 'DANG CHO|DA DK'
+        WHERE MaTauCa = p_MaTauCa;
+
     ELSIF p_TrangThaiHoatDongTauCa != 'DANG CHO|CHUA DK' THEN
         RAISE_APPLICATION_ERROR(-20001, 'TAU DA DUOC DANG KY');
+    ELSIF p_KtraSoLuongTau = FALSE THEN
+        RAISE_APPLICATION_ERROR(-20002, 'SO LUONG TAU O NGU TRUONG DAT TOI DA');
     ELSE
-        RAISE_APPLICATION_ERROR(-20002, 'HO SO CHU TAU HOAC HO SO TAU CA CHUA DUOC DUYET');
+        RAISE_APPLICATION_ERROR(-20003, 'HO SO CHU TAU HOAC HO SO TAU CA CHUA DUOC DUYET');
     END IF;
 
     COMMIT;
@@ -334,21 +348,33 @@ EXCEPTION
 END;
 /
 
--- Cap nhat trang thai CHUYEN_DANH_BAT ?? CHUA HIEU DOAN NAY DE LAM GI
+-- DUYET THONG TIN CHUYEN DANH BAT
+-- Cap nhat trang thai duyet CHUYEN_DANH_BAT
 CREATE OR REPLACE PROCEDURE UPDATE_STATUS_CHUYEN_DANH_BAT(
     p_TrangThaiDuyet    CHUYEN_DANH_BAT.TrangThaiDuyet%TYPE,
     p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
 )
 IS
+    p_MaNguTruong    CHUYEN_DANH_BAT.MaNguTruong%TYPE;  
 BEGIN
-    IF p_trangthaiduyet = 'DA DUYET' THEN
+    IF p_TrangThaiDuyet = 'DA DUYET' THEN
         UPDATE CHUYEN_DANH_BAT
-        SET TRANGTHAIDUYET = p_trangthaiduyet
-        WHERE MACHUYENDANHBAT = p_MaChuyenDanhBat;
+        SET TrangThaiDuyet = p_TrangThaiDuyet
+        WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
     ELSE
         UPDATE CHUYEN_DANH_BAT
-        SET TRANGTHAIDUYET = p_trangthaiduyet, TRANGTHAIHOATDONG = 'DANG CHO|DA DK'
-        WHERE MACHUYENDANHBAT = p_MaChuyenDanhBat;
+        SET TrangThaiDuyet = p_trangthaiduyet,
+            TrangThaiHoatDong = 'DANG CHO|CHUA DK'
+        WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+        SELECT MaNguTruong
+        INTO p_MaNguTruong
+        FROM CHUYEN_DANH_BAT
+        WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+        UPDATE NGU_TRUONG
+        SET SoLuongTauHienTai = SoLuongTauHienTai - 1
+        WHERE MaNguTruong = p_MaNguTruong;
     END IF;
 END;
 /
@@ -368,31 +394,103 @@ BEGIN
 
     EXCEPTION
     WHEN OTHERS THEN
+        ROLLBACK;
         RAISE;
 END;
 /
 
 -- Cap nhat trang thai roi cang
 CREATE OR REPLACE PROCEDURE cap_nhat_trang_thai_roi_cang(
-    p_MaTauCa CHUYEN_DANH_BAT.MaTauCa%TYPE
+    p_MaTauCa   CHUYEN_DANH_BAT.MaTauCa%TYPE,
+    p_CangDi    CHUYEN_DANH_BAT.CangDi%TYPE
 )
 IS
+    p_MaChuyenDanhBat       CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE;
+    p_TrangThaiHoatDongTauCa     TAU_CA.TrangThaiHoatDong%TYPE;
+    p_TrangThaiDuyetCDB     CHUYEN_DANH_BAT.TrangThaiDuyet%TYPE;
 BEGIN
+    SELECT TrangThaiHoatDong
+    INTO p_TrangThaiHoatDongTauCa
+    FROM TAU_CA
+    WHERE MaTauCa = p_MaTauCa;
+
+    IF p_TrangThaiHoatDongTauCa = 'DANG CHO|CHUA DK' THEN
+        RAISE_APPLICATION_ERROR(-20004, 'TAU CHUA DANG KY CHUYEN DANH BAT');
+    ELSIF p_TrangThaiHoatDongTauCa = 'DANG HOAT DONG' THEN
+        RAISE_APPLICATION_ERROR(-20005, 'TAU DANG HOAT DONG, KHONG THE DUNG CHUC NANG NAY');
+    END IF;
+
+    SELECT MaChuyenDanhBat
+    INTO p_MaChuyenDanhBat
+    FROM CHUYEN_DANH_BAT
+    WHERE MaTauCa = p_MaTauCa AND TrangThaiHoatDong = 'DANG CHO';
+
+    SELECT TrangThaiDuyet
+    INTO p_TrangThaiDuyetCDB
+    FROM CHUYEN_DANH_BAT
+    WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+    IF p_TrangThaiDuyetCDB = 'CHO DUYET' THEN
+        RAISE_APPLICATION_ERROR(-20006, 'CHUYEN DANH BAT CHUA DUOC DUYET');
+    ELSIF p_TrangThaiDuyetCDB = 'TU CHOI' THEN
+        RAISE_APPLICATION_ERROR(-20007, 'CHUYEN DANH BAT BI TU CHOI');
+    END IF;
+
     UPDATE TAU_CA
     SET TrangThaiHoatDong = 'DANG HOAT DONG'
     WHERE MaTauCa = p_MaTauCa;
+
+    UPDATE CHUYEN_DANH_BAT
+    SET TrangThaiHoatDong = 'DANG DANH BAT',
+        CangDi = p_CangDi,
+        NgayXuatBen = SYSDATE
+    WHERE MaTauCa = p_MaTauCa;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
 END;
 /
 
 -- Cap nhat trang thai cap cang
 CREATE OR REPLACE PROCEDURE cap_nhat_trang_thai_cap_cang(
-    p_MaTauCa CHUYEN_DANH_BAT.MaTauCa%TYPE
+    p_MaTauCa   CHUYEN_DANH_BAT.MaTauCa%TYPE,
+    p_CangVe    CHUYEN_DANH_BAT.CangVe%TYPE
 )
 IS
+    p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE;
+    p_TrangThaiHoatDongTauCa     TAU_CA.TrangThaiHoatDong%TYPE;
+    p_TrangThaiDuyetCDB     CHUYEN_DANH_BAT.TrangThaiDuyet%TYPE;
 BEGIN
-    UPDATE TAU_CA
-    SET TrangThaiHoatDong = 'DANG CHO|CHUA DK'
+    SELECT TrangThaiHoatDong
+    INTO p_TrangThaiHoatDongTauCa
+    FROM TAU_CA
     WHERE MaTauCa = p_MaTauCa;
+
+    SELECT MaChuyenDanhBat
+    INTO p_MaChuyenDanhBat
+    FROM CHUYEN_DANH_BAT
+    WHERE MaTauCa = p_MaTauCa AND TrangThaiHoatDong = 'DANG DANH BAT';
+
+    IF p_TrangThaiHoatDongTauCa = 'DANG HOAT DONG' THEN
+        UPDATE TAU_CA
+        SET TrangThaiHoatDong = 'DANG CHO|CHUA DK'
+        WHERE MaTauCa = p_MaTauCa;
+
+        UPDATE CHUYEN_DANH_BAT
+        SET TrangThaiHoatDong = 'HOAN THANH',
+            CangVe = p_CangVe,
+            NgayCapBen = SYSDATE
+        WHERE MaTauCa = p_MaTauCa;
+    ELSE 
+        RAISE_APPLICATION_ERROR(-20008, 'TAU HIEN TAI KHONG HOAT DONG');
+    END IF;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
 END;
 /
 
@@ -448,6 +546,7 @@ EXCEPTION
         RAISE;
 END;
 /
+
 CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_dang_hoat_dong(
     
     p_cursor OUT SYS_REFCURSOR
@@ -675,13 +774,13 @@ BEGIN
 END;
 /
 
---Dang ky chuyen danh bat moi
+-- Kiem tra so luong tau hien tai
 CREATE OR REPLACE FUNCTION Fn_kiem_tra_so_luong_tau (
-    p_MaNguTruong NVARCHAR2
+    p_MaNguTruong      NGU_TRUONG.MaNguTruong%TYPE
 ) RETURN BOOLEAN
 IS
-    f_HienTai INTEGER;
-    f_ToiDa INTEGER;
+    f_HienTai       NGU_TRUONG.SoLuongTauHienTai%TYPE;
+    f_ToiDa         NGU_TRUONG.SoLuongTauToiDa%TYPE;
 BEGIN
     SELECT SoLuongTauHienTai, SoLuongTauToiDa
     INTO f_HienTai, f_ToiDa
@@ -692,36 +791,6 @@ BEGIN
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RETURN FALSE; 
-END;
-/
-CREATE OR REPLACE FUNCTION Fn_tao_chuyen_danh_bat (
-    p_NgayXuatBen     DATE,
-    p_NgayCapBen      DATE,
-    p_CangDi          NVARCHAR2,
-    p_CangVe          NVARCHAR2,
-    p_MaTauCa         NVARCHAR2,
-    p_MaNguTruong     NVARCHAR2
-) RETURN NVARCHAR2
-IS
-    f_MaChuyenDanhBat NVARCHAR2(20);
-BEGIN
-	SELECT 'CDP' || SEQ_CHUYEN_DANH_BAT.NEXTVAL
-    INTO f_MaChuyenDanhBat
-    FROM DUAL;
-
-    INSERT INTO CHUYEN_DANH_BAT (
-        MaChuyenDanhBat, NgayXuatBen, NgayCapBen,
-        CangDi, CangVe, MaTauCa, MaNguTruong
-    ) VALUES (
-        f_MaChuyenDanhBat, p_NgayXuatBen, p_NgayCapBen,
-        NULLIF(p_CangDi, ''), NULLIF(p_CangVe, ''),
-        p_MaTauCa, p_MaNguTruong
-    );
-
-    RETURN f_MaChuyenDanhBat;
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN NULL; 
 END;
 /
 
