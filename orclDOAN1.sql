@@ -362,8 +362,6 @@ BEGIN
         UPDATE CHUYEN_DANH_BAT
         SET TrangThaiDuyet = p_TrangThaiDuyet
         WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
-        SET TrangThaiDuyet = p_TrangThaiDuyet
-        WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
     ELSE
         UPDATE CHUYEN_DANH_BAT
         SET TrangThaiDuyet = p_trangthaiduyet,
