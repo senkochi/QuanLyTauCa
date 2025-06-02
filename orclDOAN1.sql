@@ -358,7 +358,6 @@ IS
     p_MaNguTruong    CHUYEN_DANH_BAT.MaNguTruong%TYPE;  
 BEGIN
     IF p_TrangThaiDuyet = 'DA DUYET' THEN
-    IF p_TrangThaiDuyet = 'DA DUYET' THEN
         UPDATE CHUYEN_DANH_BAT
         SET TrangThaiDuyet = p_TrangThaiDuyet
         WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
