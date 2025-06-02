@@ -358,7 +358,10 @@ IS
     p_MaNguTruong    CHUYEN_DANH_BAT.MaNguTruong%TYPE;  
 BEGIN
     IF p_TrangThaiDuyet = 'DA DUYET' THEN
+    IF p_TrangThaiDuyet = 'DA DUYET' THEN
         UPDATE CHUYEN_DANH_BAT
+        SET TrangThaiDuyet = p_TrangThaiDuyet
+        WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
         SET TrangThaiDuyet = p_TrangThaiDuyet
         WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
     ELSE
@@ -494,6 +497,21 @@ BEGIN
 END;
 /
 
+CREATE OR REPLACE PROCEDURE theo_doi_hai_trinh(
+    p_cursor OUT SYS_REFCURSOR,
+    p_MaChuyenDanhBat CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
+)
+IS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT lht.MaLogHaiTrinh, lht.ThoiGian, lht.ViTri, lht.VanToc, lht.HuongDiChuyen
+        FROM LOG_HAI_TRINH lht
+        WHERE lht.MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
 
 CREATE OR REPLACE PROCEDURE truy_xuat_nguon_goc_hai_san(
     thuy_san_cursor OUT SYS_REFCURSOR,
@@ -561,6 +579,48 @@ EXCEPTION
         RAISE;
 END;
 /
+CREATE OR REPLACE PROCEDURE them_log_hai_trinh(
+
+    MaLogHaiTrinh       INTEGER,
+    MaChuyenDanhBat     NVARCHAR2,
+    ThoiGian            DATE,
+    ViTri_x             NUMBER,
+    ViTri_y             NUMBER,
+    VanToc              NUMBER,
+    HuongDiChuyen       NVARCHAR2
+)
+IS
+   v_ViTri SDO_GEOMETRY;
+   v_exists NUMBER; 
+BEGIN
+    SELECT COUNT(*) 
+      INTO v_exists
+      FROM CHUYEN_DANH_BAT
+     WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+    IF v_exists = 0 THEN
+        RAISE_APPLICATION_ERROR(
+            -20010, 
+            'MaChuyenDanhBat "' || p_MaChuyenDanhBat || '" khong ton tai.'
+        );
+    END IF;
+    v_ViTri := SDO_GEOMETRY(
+        2001, 
+        4326, 
+        SDO_POINT_TYPE(ViTri_x, ViTri_y, NULL), 
+        NULL, 
+        NULL  
+    );
+    INSERT INTO LOG_HAI_TRINH(MALOGHAITRINH, MACHUYENDANHBAT, THOIGIAN, VITRI, VANTOC, HUONGDICHUYEN)
+    VALUES (MaLogHaiTrinh, MaChuyenDanhBat, ThoiGian, v_ViTri, VanToc, HuongDiChuyen);
+
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
 
 
 --3.NGU TRUONG
@@ -574,15 +634,20 @@ CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ngu_truong(
 )
 IS 
     v_ViTri SDO_GEOMETRY;
-    v_Count INTEGER;
+    v_Count NUMBER;
+    v_rowcount NUMBER;
 BEGIN
-    v_ViTri := SDO_GEOMETRY(
-        2003, -- Geometry type (2003 for 2D) 
-        NULL, --he quy chieu khong gian 
-        NULL, --sdo_point--dung cho diem don lele
-        SDO_ELEM_INFO_ARRAY(1, 1003, 1),--(mang thong tin cau tructruc) 1 vi tri bat dau, 1003 la polygon vong ngoai,1 noi cac dinh bang duong htanghtang
-        SDO_ORDINATE_ARRAY()  --khai bao mang rong 
-    );
+    --kiem tra ma ngu truong co ton tai khong
+    SELECT COUNT(*) INTO v_rowcount
+    FROM NGU_TRUONG
+    WHERE MaNguTruong = p_MaNguTruong;
+
+    IF v_rowcount = 0 THEN
+        RAISE_APPLICATION_ERROR(
+            -20001,
+            'MaNguTruong "' || p_MaNguTruong || '" khong ton tai.'
+        );
+    END IF;
     --Kiem tra so luong toa do hop le
     v_Count := p_XY_DS.COUNT;
     IF MOD(v_Count, 2) != 0 THEN
@@ -595,18 +660,28 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20003, 'Polygon khong khep kin: diem dau va diem cuoi phai trung nhau.');
     END IF;
 
+     v_ViTri := SDO_GEOMETRY(
+        2003, -- Geometry type (2003 for 2D) 
+        p_SRID, --he quy chieu khong gian 
+        NULL, --sdo_point--dung cho diem don lele
+        SDO_ELEM_INFO_ARRAY(1, 1003, 1),--(mang thong tin cau tructruc) 1 vi tri bat dau, 1003 la polygon vong ngoai,1 noi cac dinh bang duong htanghtang
+        p_XY_DS  
+    );
     --Gan toa do vao v_ViTri
-    v_ViTri.SDO_ORDINATES := p_XY_DS;
+    --v_ViTri.SDO_ORDINATES := p_XY_DS;
     --Gan SRID vao v_ViTri
-    v_ViTri.SDO_SRID := p_SRID;
+    --v_ViTri.SDO_SRID := p_SRID;
     --Update thong tin ngu truong
+
+    
     UPDATE NGU_TRUONG
     SET TenNguTruong = p_TenNguTruong,ViTri=v_ViTri,SoLuongTauHienTai = p_SoLuongTauHienTai,SoLuongTauToiDa = p_SoLuongTauToiDa
     WHERE MANGUTRUONG = p_MaNguTruong;
 
+    
     EXCEPTION
     WHEN OTHERS THEN
-        -- In thông báo lỗi ra màn hình, rồi kết thúc thủ tục
+        
         DBMS_OUTPUT.PUT_LINE('ERROR: ' || SQLERRM);
         RETURN;
 END;
@@ -626,9 +701,23 @@ CREATE OR REPLACE PROCEDURE Hien_thi_ngu_truong(
     p_MaNguTruong NVARCHAR2
 )
 IS
+    v_Count NUMBER;
 BEGIN
+    -- Kiem tra ma ngu truong co ton tai khong
+    -- Neu khong ton tai, thi bao loi
+    SELECT COUNT(*)
+    INTO v_Count
+    FROM NGU_TRUONG ng
+    WHERE ng.MANGUTRUONG = p_MaNguTruong;
+
+    IF v_Count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Ngu truong khong ton tai');
+    END IF; 
+
+
     OPEN ngu_truong_cursor FOR
         SELECT* FROM NGU_TRUONG ng WHERE ng.MANGUTRUONG = p_MaNguTruong; 
+    
 
 END;
 /
@@ -636,6 +725,26 @@ END;
 --4.THONG KE
 
 --Vi pham
+
+CREATE OR REPLACE PROCEDURE them_vi_pham(
+    p_MaViPham NVARCHAR2,
+    p_MaChuyenDanhBat NVARCHAR2,
+    p_TenViPham NVARCHAR2,
+    p_MucDoViPham NVARCHAR2,
+    p_MoTa NVARCHAR2
+)
+IS
+BEGIN
+    INSERT INTO VI_PHAM(MAVIPHAM, MaChuyenDanhBat, TenViPham, MucDoViPham, MoTa)
+    VALUES (p_MaViPham, p_MaChuyenDanhBat, p_TenViPham, p_MucDoViPham, p_MoTa);
+
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
 CREATE OR REPLACE PROCEDURE hien_thi_danh_sach_vi_pham(
     vi_pham_cursor OUT SYS_REFCURSOR
 )
@@ -671,7 +780,24 @@ END;
 /
 
 --Bao
+CREATE OR REPLACE PROCEDURE them_bao(
+    p_MaBao NVARCHAR2,
+    p_TenBao NVARCHAR2,
+    p_NoiDung NVARCHAR2,
+    p_NgayBao DATE
+)
+IS
+BEGIN
+    INSERT INTO BAO(MABAO, TENBAO, NOIDUNG, NGAYBAO)
+    VALUES (p_MaBao, p_TenBao, p_NoiDung, p_NgayBao);
 
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
 CREATE OR REPLACE PROCEDURE hien_thi_danh_sach_bao(
     bao_cursor OUT SYS_REFCURSOR
 )
@@ -724,6 +850,93 @@ BEGIN
         SELECT * FROM THUY_SAN ts
         WHERE ts.MaThuySan = p_MaThuySan;
 END;
+
+--Khi tuong thuy van
+
+CREATE OR REPLACE PROCEDURE them_thoi_tiet(
+    p_MaDuBao         NVARCHAR2,
+    p_ThoiGianDuBao   DATE,
+    p_KhuVucAnhHuong  NVARCHAR2,
+    p_ChiTietDuBao    NVARCHAR2
+)
+IS
+BEGIN
+    INSERT INTO THOI_TIET(MaDuBao, ThoiGianDuBao, KhuVucAnhHuong, ChiTietDuBao)
+    VALUES (p_MaDuBao, p_ThoiGianDuBao, p_KhuVucAnhHuong, p_ChiTietDuBao);
+
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+
+CREATE OR REPLACE PROCEDURE them_log_duong_di_bao(
+    p_MaLogDuongDi    IN INTEGER,
+    p_MaBao           IN NVARCHAR2,
+    p_ThoiGian        IN DATE,
+    p_ViTri_x         NUMBER,
+    p_ViTri_y         NUMBER,
+    p_MucDo           IN NUMBER
+)
+IS
+    v_exists_bao NUMBER;
+    v_ViTri SDO_GEOMETRY;
+BEGIN
+    
+    SELECT COUNT(*) 
+      INTO v_exists_bao
+      FROM BAO
+     WHERE MaBao = p_MaBao;
+
+    IF v_exists_bao = 0 THEN
+        RAISE_APPLICATION_ERROR(
+            -20050,
+            'MaBao "' || p_MaBao || '" không tồn tại trong bảng BAO.'
+        );
+    END IF;
+
+    v_ViTri := SDO_GEOMETRY(
+        2001, 
+        4326, 
+        SDO_POINT_TYPE(p_ViTri_x, p_ViTri_y, NULL), 
+        NULL, 
+        NULL  
+    );
+    
+    INSERT INTO LOG_DUONG_DI_BAO(
+        MaLogDuongDi,
+        MaBao,
+        ThoiGian,
+        ViTri,
+        MucDo
+    )
+    VALUES (
+        p_MaLogDuongDi,
+        p_MaBao,
+        p_ThoiGian,
+        v_ViTri,
+        p_MucDo
+    );
+
+    
+    COMMIT;
+
+EXCEPTION
+    WHEN DUP_VAL_ON_INDEX THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(
+            -20051,
+            'Đã tồn tại LOG_DUONG_DI_BAO với MaLogDuongDi = ' || p_MaLogDuongDi ||
+            ' và MaBao = "' || p_MaBao || '".'
+        );
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+
 -- VI. CREATE FUNCTION
 
  --Kiem tra dang nhap
