@@ -157,7 +157,7 @@ END;
 
 -- PROCEDURE XU LY
 -- Tao admin
-CREATE OR REPLACE PROCEDURE INSERT_ADMIN_MOI(
+CREATE OR REPLACE PROCEDURE INSERT_NEW_ADMIN(
     p_USERNAME      APP_USER.USERNAME%TYPE,
     p_PASSWORD      APP_USER.PASSWORD%TYPE,
     p_HoTen         ADMIN.HoTen%TYPE,
@@ -191,7 +191,7 @@ END;
 
 -- DANG KY THONG TIN CHU_TAU
 -- Tao chu tau
-CREATE OR REPLACE PROCEDURE INSERT_CHU_TAU_MOI(
+CREATE OR REPLACE PROCEDURE INSERT_NEW_CHU_TAU(
     p_USERNAME      APP_USER.USERNAME%TYPE,
     p_PASSWORD      APP_USER.PASSWORD%TYPE,
     p_HoTen         CHU_TAU.HoTen%TYPE,
@@ -224,14 +224,13 @@ END;
 
 -- DANG KY THONG TIN TAU_CA
 -- Them NGHE moi
-CREATE OR REPLACE PROCEDURE INSERT_TAU_NGHE(
-    p_MaNghe        NGHE.MaNghe%TYPE,
+CREATE OR REPLACE PROCEDURE INSERT_NGHE(
     p_TenNghe       NGHE.TenNghe%TYPE
 )
 IS
 BEGIN
-    INSERT INTO NGHE(MaNghe, TenNghe)
-    VALUES (p_MaNghe, p_TenNghe);
+    INSERT INTO NGHE(TenNghe)
+    VALUES (p_TenNghe);
 
     COMMIT;
 
@@ -252,9 +251,19 @@ CREATE OR REPLACE PROCEDURE INSERT_TAU_CA(
     p_MaNgheChinh        TAU_CA.MaNgheChinh%TYPE
 )
 IS
+    p_TrangThaiDuyetChuTau  CHUTAU.TrangThaiDuyet%TYPE;
 BEGIN
-    INSERT INTO TAU_CA(SoDangKy, LoaiTau, ChieuDai, CongSuat, NamDongTau, MaChuTau, MaNgheChinh)
-    VALUES (p_SoDangKy, p_LoaiTau, p_ChieuDai, p_CongSuat, p_NamDongTau, p_MaChuTau, p_MaNgheChinh);
+    SELECT TrangThaiDuyet
+    INTO p_TrangThaiDuyetChuTau
+    FROM CHU_TAU
+    WHERE MaChuTau = p_MaChuTau;
+
+    IF p_TrangThaiDuyetChuTau = 'DA DUYET' THEN
+        INSERT INTO TAU_CA(SoDangKy, LoaiTau, ChieuDai, CongSuat, NamDongTau, MaChuTau, MaNgheChinh)
+        VALUES (p_SoDangKy, p_LoaiTau, p_ChieuDai, p_CongSuat, p_NamDongTau, p_MaChuTau, p_MaNgheChinh);
+    ELSE
+        RAISE_APPLICATION_ERROR(-number, 'HO SO CHU TAU CHUA DUOC DUYET');
+    END IF;
 
     COMMIT;
 
@@ -283,9 +292,10 @@ BEGIN
         ROLLBACK;
         RAISE;
 END;
+/
 
 -- DUYET THONG TIN CHU_TAU
-
+-- Xem PROCEDURE LAY DU LIEU
 -- Cap nhat trang thai duyet CHU_TAU
 CREATE OR REPLACE PROCEDURE UPDATE_STATUS_CHU_TAU(
     p_TrangThaiDuyet    CHU_TAU.TrangThaiDuyet%TYPE,
@@ -300,7 +310,7 @@ END;
 /
 
 -- DUYET THONG TIN TAU_CA
-
+-- Xem PROCEDURE LAY DU LIEU
 -- Cap nhat trang thai duyet TAU_CA
 CREATE OR REPLACE PROCEDURE UPDATE_STATUS_TAU_CA(
     p_TrangThaiDuyet    TAU_CA.TrangThaiDuyet%TYPE,
@@ -385,7 +395,7 @@ CREATE OR REPLACE PROCEDURE get_status_TAU_CA(
 IS
 BEGIN
     OPEN tau_ca_cursor FOR
-        SELECT tc.MaTauCa, tc.TrangThaiDuyet
+        SELECT tc.MaTauCa, tc.SoDangKy, tc.TrangThaiDuyet
         FROM TAU_CA tc
         WHERE tc.MaChuTau = p_MaChuTau;
 END;
@@ -396,7 +406,7 @@ END;
 -- DANG KY THONG TIN CHUYEN DANH BAT
 
 -- Tao CHUYEN_DANH_BAT
-CREATE OR REPLACE PROCEDURE INSERT_CHUYEN_DANH_BAT_MOI(
+CREATE OR REPLACE PROCEDURE INSERT_NEW_CHUYEN_DANH_BAT(
     p_MaTauCa             CHUYEN_DANH_BAT.MaTauCa%TYPE,
     p_MaNguTruong         CHUYEN_DANH_BAT.MaNguTruong%TYPE
 )
@@ -455,7 +465,8 @@ CREATE OR REPLACE PROCEDURE UPDATE_STATUS_CHUYEN_DANH_BAT(
     p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
 )
 IS
-    p_MaNguTruong    CHUYEN_DANH_BAT.MaNguTruong%TYPE;  
+    p_MaNguTruong    CHUYEN_DANH_BAT.MaNguTruong%TYPE;
+    p_MaTauCa        CHUYEN_DANH_BAT.MaTauCa%TYPE;
 BEGIN
     IF p_TrangThaiDuyet = 'DA DUYET' THEN
         UPDATE CHUYEN_DANH_BAT
@@ -463,14 +474,17 @@ BEGIN
         WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
     ELSE
         UPDATE CHUYEN_DANH_BAT
-        SET TrangThaiDuyet = p_trangthaiduyet,
-            TrangThaiHoatDong = 'DANG CHO|CHUA DK'
+        SET TrangThaiDuyet = p_trangthaiduyet
         WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
 
-        SELECT MaNguTruong
-        INTO p_MaNguTruong
+        SELECT MaTauCa, MaNguTruong
+        INTO p_MaTauCa, p_MaNguTruong
         FROM CHUYEN_DANH_BAT
-        WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
+        WHERE MaChuyenDanhBat = p_MaChuyenDanhBat; 
+
+        UPDATE TAU_CA
+        SET TrangThaiHoatDong = 'DANG CHO|CHUA DK'
+        WHERE MaTauCa = p_MaTauCa;
 
         UPDATE NGU_TRUONG
         SET SoLuongTauHienTai = SoLuongTauHienTai - 1
@@ -486,9 +500,9 @@ CREATE OR REPLACE PROCEDURE cap_nhat_trang_thai_roi_cang(
     p_CangDi    CHUYEN_DANH_BAT.CangDi%TYPE
 )
 IS
-    p_MaChuyenDanhBat       CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE;
-    p_TrangThaiHoatDongTauCa     TAU_CA.TrangThaiHoatDong%TYPE;
-    p_TrangThaiDuyetCDB     CHUYEN_DANH_BAT.TrangThaiDuyet%TYPE;
+    p_MaChuyenDanhBat               CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE;
+    p_TrangThaiHoatDongTauCa        TAU_CA.TrangThaiHoatDong%TYPE;
+    p_TrangThaiDuyetCDB             CHUYEN_DANH_BAT.TrangThaiDuyet%TYPE;
 BEGIN
     SELECT TrangThaiHoatDong
     INTO p_TrangThaiHoatDongTauCa
@@ -540,21 +554,22 @@ CREATE OR REPLACE PROCEDURE cap_nhat_trang_thai_cap_cang(
     p_CangVe    CHUYEN_DANH_BAT.CangVe%TYPE
 )
 IS
-    p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE;
-    p_TrangThaiHoatDongTauCa     TAU_CA.TrangThaiHoatDong%TYPE;
-    p_TrangThaiDuyetCDB     CHUYEN_DANH_BAT.TrangThaiDuyet%TYPE;
+    p_MaChuyenDanhBat               CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE;
+    p_TrangThaiHoatDongTauCa        TAU_CA.TrangThaiHoatDong%TYPE;
+    p_TrangThaiDuyetCDB             CHUYEN_DANH_BAT.TrangThaiDuyet%TYPE;
+    p_MaNguTruong                   CHUYEN_DANH_BAT.MaNguTruong%TYPE;
 BEGIN
     SELECT TrangThaiHoatDong
     INTO p_TrangThaiHoatDongTauCa
     FROM TAU_CA
     WHERE MaTauCa = p_MaTauCa;
 
-    SELECT MaChuyenDanhBat
-    INTO p_MaChuyenDanhBat
-    FROM CHUYEN_DANH_BAT
-    WHERE MaTauCa = p_MaTauCa AND TrangThaiHoatDong = 'DANG DANH BAT';
-
     IF p_TrangThaiHoatDongTauCa = 'DANG HOAT DONG' THEN
+        SELECT MaChuyenDanhBat, MaNguTruong
+        INTO p_MaChuyenDanhBat, p_MaNguTruong
+        FROM CHUYEN_DANH_BAT
+        WHERE MaTauCa = p_MaTauCa AND TrangThaiHoatDong = 'DANG DANH BAT';
+
         UPDATE TAU_CA
         SET TrangThaiHoatDong = 'DANG CHO|CHUA DK'
         WHERE MaTauCa = p_MaTauCa;
@@ -564,6 +579,10 @@ BEGIN
             CangVe = p_CangVe,
             NgayCapBen = SYSDATE
         WHERE MaTauCa = p_MaTauCa;
+
+        UPDATE NGU_TRUONG
+        SET SoLuongTauHienTai = SoLuongTauHienTai - 1
+        WHERE MaNguTruong = p_MaNguTruong;
     ELSE 
         RAISE_APPLICATION_ERROR(-20008, 'TAU HIEN TAI KHONG HOAT DONG');
     END IF;
@@ -575,22 +594,79 @@ BEGIN
 END;
 /
 
--- THEO DOI HAI TRINH
-CREATE OR REPLACE PROCEDURE theo_doi_hai_trinh(
-    p_cursor OUT SYS_REFCURSOR,
-    p_MaChuyenDanhBat CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
+-- CAP NHAT NHAT KY DANH BAT
+-- INSERT ME_CA
+CREATE OR REPLACE PROCEDURE INSERT_NEW_ME_CA(
+    p_MaChuyenDanhBat   CHUYENDANHBAT.MaChuyenDanhBat%TYPE,
+    p_ThoiGianThaLuoi     CHUYENDANHBAT.ThoiGianThaLuoi%TYPE,
+    p_ThoiGianKeoLuoi     CHUYENDANHBAT.ThoiGianKeoLuoi%TYPE,
+    p_ViTriKeoLuoi        CHUYENDANHBAT.ViTriKeoLuoi%TYPE
 )
 IS
 BEGIN
-    OPEN p_cursor FOR
-        SELECT lht.MaLogHaiTrinh, lht.ThoiGian, lht.ViTri, lht.VanToc, lht.HuongDiChuyen
-        FROM LOG_HAI_TRINH lht
-        WHERE lht.MaChuyenDanhBat = p_MaChuyenDanhBat;
-
-    EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
+    INSERT INTO ME_CA(MaChuyenDanhBat, ThoiGianThaLuoi, ThoiGianKeoLuoi, ViTriKeoLuoi)
+    VALUES (p_MaChuyenDanhBat, p_ThoiGianThaLuoi, p_ThoiGianKeoLuoi, p_ViTriKeoLuoi);
 END;
+/
+
+--INSERT CHI TIET ME_CA
+CREATE OR REPLACE PROCEDURE INSERT_DANHBAT_THUYSAN(
+    p_MaChuyenDanhBat       CHUYENDANHBAT.MaChuyenDanhBat%TYPE,
+    p_MaMeCa                CHUYENDANHBAT.MaMeCa%TYPE,
+    p_MaThuySan             CHUYENDANHBAT.MaThuySan%TYPE,
+    p_KhoiLuong             CHUYENDANHBAT.KhoiLuong%TYPE
+)
+IS
+BEGIN
+    INSERT INTO DANHBAT_THUYSAN(MaChuyenDanhBat, MaMeCa, MaThuySan, KhoiLuong)
+    VALUES (p_MaChuyenDanhBat, p_MaMeCa, p_MaThuySan, p_KhoiLuong);
+END;
+/
+
+-- TRUY XUAT NHAT KY DANH BAT
+-- Lay nhat ky danh bat
+CREATE OR REPLACE PROCEDURE truy_xuat_nhat_ky_danh_bat(
+    thong_tin_tau_cursor OUT SYS_REFCURSOR,
+    thong_tin_danh_bat_cursor OUT SYS_REFCURSOR,
+    p_MaChuyenDanhBat          CHUYEN_DANH_BAT.MaChuyenDanhBatTauCa%TYPE 
+)
+IS
+BEGIN
+    OPEN thong_tin_tau_cursor FOR 
+        SELECT 
+            ct.HoTen,
+            tc.MaTauCa, tc.SoDangKy, tc.LoaiTau, tc.ChieuDai, tc.CongSuat,
+            nghe_chinh.TenNghe,
+            cdb.MaChuyenDanhBat, cdb.NgayXuatBen, cdb.NgayCapBen, cdb.CangDi, cdb.CangVe,
+            nghe_chinh.TenNghe
+        FROM CHUYEN_DANH_BAT cdb
+        JOIN CHU_TAU ct ON ct.MaChuTau = cdb.MaChuTau
+        JOIN TAU_CA tc ON tc.MaTauCa = cdb.MaTauCa
+        JOIN NGHE nghe_chinh ON nghe_chinh.MaNghe = tc.MaNgheChinh
+        JOIN TAU_NGHE tau_nghe ON tau_nghe.MaTauCa = tc.MaTauCa
+        WHERE cdb.MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+    OPEN thong_tin_danh_bat_cursor FOR 
+        SELECT 
+            mc.MaMeCa, 
+            mc.KhoiLuongMeCa, 
+            mc.ThoiGianThaLuoi, 
+            mc.ThoiGianKeoLuoi, 
+            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(mc.ViTriKeoLuoi), 4000, 1) AS ViTriText,
+            LISTAGG(ts.TenLoaiThuySan || ': ' || dbts.KhoiLuong || 'kg', ', ') 
+                WITHIN GROUP (ORDER BY ts.TenLoaiThuySan ASC) AS ChiTietMeCa
+        FROM ME_CA mc
+        JOIN DANHBAT_THUYSAN dbts ON dbts.MaMeCa = mc.MaMeCa AND dbts.MaChuyenDanhBat = mc.MaChuyenDanhBat
+        JOIN THUY_SAN ts ON ts.MaThuySan = dbts.MaThuySan
+        WHERE mc.MaChuyenDanhBat = p_MaChuyenDanhBat
+        GROUP BY             
+            mc.MaMeCa, 
+            mc.KhoiLuongMeCa, 
+            mc.ThoiGianThaLuoi, 
+            mc.ThoiGianKeoLuoi, 
+            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(mc.ViTriKeoLuoi), 4000, 1);
+END;
+/
 
 -- TRUY XUAT NGUON GOC THUY SAN
 CREATE OR REPLACE PROCEDURE truy_xuat_nguon_goc_hai_san(
@@ -603,50 +679,45 @@ BEGIN
         SELECT mc.VITRIKEOLUOI,mc.THOIGIANKEOLUOI,mc.THOIGIANTHALUOI
         FROM DANHBAT_THUYSAN dbts 
         JOIN ME_CA mc on dbts.MaMeCa = mc.MaMeCa
-        WHERE dbts.MaThuySan = p_MaThuySan;
+        WHERE dbts.MaThuySan = 1;
 END;
 /
--- TRUY XUAT NHAT KY DANH BAT
--- Lay nhat ky danh bat
-CREATE OR REPLACE PROCEDURE truy_xuat_nhat_ky_danh_bat(
-    nhat_ky_cursor OUT SYS_REFCURSOR,
-    p_MaTauCa           CHUYEN_DANH_BAT.MaTauCa%TYPE 
+
+
+-- THEO DOI HAI TRINH
+-- Lay danh sach LOG toa do
+CREATE OR REPLACE PROCEDURE theo_doi_hai_trinh(
+    p_cursor OUT SYS_REFCURSOR,
+    p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
 )
 IS
 BEGIN
-    OPEN nhat_ky_cursor FOR 
-        SELECT 
-            ct.HoTen,
-            tc.MaTauCa, tc.SoDangKy, tc.LoaiTau, tc.ChieuDai, tc.CongSuat,
-            cdb.MaChuyenDanhBat, cdb.NgayCapBen, cdb.NgayXuatBen, cdb.CangDi, cdb.CangVe,
-            ng.TenNghe
-        FROM TAU_CA tc
-        JOIN CHU_TAU ct ON tc.MaChuTau = ct.MaChuTau
-        JOIN CHUYEN_DANH_BAT cdb ON tc.MaTauCa = cdb.MaTauCa
-        LEFT JOIN TAU_NGHE t_n ON t_n.MaTauCa = tc.MaTauCa
-        LEFT JOIN NGHE ng ON t_n.MaNghe = ng.MaNghe
-        WHERE tc.MaTauCa = p_MaTauCa;
+    OPEN p_cursor FOR
+        SELECT lht.MaLogHaiTrinh, lht.ThoiGian, lht.ViTri, lht.VanToc, lht.HuongDiChuyen
+        FROM LOG_HAI_TRINH lht
+        WHERE lht.MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
-
+-- Them 1 diem toa do vao LOG
 CREATE OR REPLACE PROCEDURE INSERT_LOG_HAI_TRINH(
-    MaLogHaiTrinh       INTEGER,
-    MaChuyenDanhBat     NVARCHAR2,
-    ThoiGian            DATE,
-    ViTri_x             NUMBER,
-    ViTri_y             NUMBER,
-    VanToc              NUMBER,
-    HuongDiChuyen       NVARCHAR2
+    p_MaChuyenDanhBat     LOG_HAI_TRINH.MaChuyenDanhBat%TYPE,
+    p_ThoiGian            LOG_HAI_TRINH.ThoiGian%TYPE,
+    p_ViTri               VARCHAR2,
+    p_VanToc              LOG_HAI_TRINH.VanToc%TYPE,
+    p_HuongDiChuyen       LOG_HAI_TRINH.HuongDiChuyen%TYPE
 )
 IS
-   v_ViTri SDO_GEOMETRY;
    v_exists NUMBER; 
 BEGIN
     SELECT COUNT(*) 
-      INTO v_exists
-      FROM CHUYEN_DANH_BAT
-     WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
+        INTO v_exists
+        FROM CHUYEN_DANH_BAT
+    WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
 
     IF v_exists = 0 THEN
         RAISE_APPLICATION_ERROR(
@@ -654,15 +725,9 @@ BEGIN
             'MaChuyenDanhBat "' || p_MaChuyenDanhBat || '" khong ton tai.'
         );
     END IF;
-    v_ViTri := SDO_GEOMETRY(
-        2001, 
-        4326, 
-        SDO_POINT_TYPE(ViTri_x, ViTri_y, NULL), 
-        NULL, 
-        NULL  
-    );
-    INSERT INTO LOG_HAI_TRINH(MALOGHAITRINH, MACHUYENDANHBAT, THOIGIAN, VITRI, VANTOC, HUONGDICHUYEN)
-    VALUES (MaLogHaiTrinh, MaChuyenDanhBat, ThoiGian, v_ViTri, VanToc, HuongDiChuyen);
+
+    INSERT INTO LOG_HAI_TRINH(MaChuyenDanhBat, ThoiGian, ViTri, VanToc, HuongDiChuyen)
+    VALUES (p_MaChuyenDanhBat, p_ThoiGian, SDO_UTIL.FROM_WKTGEOMETRY(p_ViTri), p_VanToc, p_HuongDiChuyen);
 
     COMMIT;
 
