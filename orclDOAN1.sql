@@ -1,6 +1,6 @@
 -- IV. CREATE TRIGGER
---TRIGGER
-CREATE OR REPLACE TRIGGER check_VI_PHAM
+-- Kiem tra vi pham vung bien
+CREATE OR REPLACE TRIGGER TRG_check_VI_PHAM
 AFTER INSERT ON LOG_HAI_TRINH
 FOR EACH ROW
 DECLARE
@@ -23,6 +23,26 @@ BEGIN
     IF SDO_CONTAINS(v_poly, :NEW.ViTri) = 'FALSE' AND v_Count = 0 THEN
         insert_VI_PHAM(:NEW.MaChuyenDanhBat, :NEW.ViTri, 'Vi pham vung bien');
     END IF;
+END;
+/
+
+-- CAP NHAT SAN LUONG CHUYEN DANH BAT
+CREATE OR REPLACE TRIGGER TRG_update_weight
+AFTER INSERT ON DANHBAT_THUYSAN
+FOR EACH ROW
+BEGIN
+    UPDATE ME_CA
+    SET KhoiLuongMeCa = KhoiLuongMeCa + :NEW.KhoiLuong
+    WHERE MaMeCa = :NEW.MaMeCa AND MaChuyenDanhBat = :NEW.MaChuyenDanhBat;
+
+    UPDATE CHUYEN_DANH_BAT
+    SET TongKhoiLuong = TongKhoiLuong + :NEW.KhoiLuong
+    WHERE MaChuyenDanhBat = :NEW.MaChuyenDanhBat;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in TRG_update_weight: ' || SQLERRM);
 END;
 /
 
@@ -138,6 +158,23 @@ BEGIN
         SELECT* FROM NGU_TRUONG ng WHERE ng.MANGUTRUONG = p_MaNguTruong; 
     
 
+END;
+/
+
+-- Lay thong tin THOI_TIET moi nhat
+CREATE OR REPLACE PROCEDURE get_newest_weather_info(
+    weather_cursor OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN weather_cursor FOR
+        SELECT *
+        FROM (
+            SELECT *
+            FROM THOI_TIET
+            ORDER BY ThoiGianDuBao DESC
+        )
+        WHERE ROWNUM = 1;
 END;
 /
 
@@ -912,6 +949,7 @@ BEGIN
 END;
 /
 
+-- BAO
 -- THONG KE SO LUONG BAO THEO NAM
 CREATE OR REPLACE PROCEDURE thong_ke_so_bao_theo_nam(
     bao_cursor OUT SYS_REFCURSOR
@@ -919,28 +957,25 @@ CREATE OR REPLACE PROCEDURE thong_ke_so_bao_theo_nam(
 IS
 BEGIN
     OPEN bao_cursor FOR
-        SELECT 
-            EXTRACT(YEAR FROM ThoiGian) AS Nam,
-            COUNT(*)                       AS SoLuongBao
+        SELECT EXTRACT(YEAR FROM lddb.ThoiGian) AS Nam,
+                COUNT(DISTINCT b.MaBao) AS SoLuongBao
         FROM BAO b
         JOIN LOG_DUONG_DI_BAO lddb ON lddb.MaBao = b.MaBao
-        GROUP BY EXTRACT(YEAR FROM ThoiGian)
+        GROUP BY EXTRACT(YEAR FROM lddb.ThoiGian)
         ORDER BY Nam;
 END;
 /
--- DANG SUA O DAY
+
 --5. KHI TUONG THUY VAN
 -- insert THOI_TIET
 CREATE OR REPLACE PROCEDURE insert_THOI_TIET(
-    p_MaDuBao         NVARCHAR2,
-    p_ThoiGianDuBao   DATE,
-    p_KhuVucAnhHuong  NVARCHAR2,
-    p_ChiTietDuBao    NVARCHAR2
+    p_KhuVucAnhHuong  THOI_TIET.KhuVucAnhHuong%TYPE,
+    p_ChiTietDuBao    THOI_TIET.ChiTietDuBao%TYPE
 )
 IS
 BEGIN
-    INSERT INTO THOI_TIET(MaDuBao, ThoiGianDuBao, KhuVucAnhHuong, ChiTietDuBao)
-    VALUES (p_MaDuBao, p_ThoiGianDuBao, p_KhuVucAnhHuong, p_ChiTietDuBao);
+    INSERT INTO THOI_TIET(KhuVucAnhHuong, ChiTietDuBao)
+    VALUES (p_KhuVucAnhHuong, p_ChiTietDuBao);
 
     COMMIT;
 
@@ -953,15 +988,12 @@ END;
 
 -- insert BAO
 CREATE OR REPLACE PROCEDURE insert_BAO(
-    p_MaBao NVARCHAR2,
-    p_TenBao NVARCHAR2,
-    p_NoiDung NVARCHAR2,
-    p_NgayBao DATE
+    p_TenBao    BAO.TenBao%TYPE
 )
 IS
 BEGIN
-    INSERT INTO BAO(MABAO, TENBAO, NOIDUNG, NGAYBAO)
-    VALUES (p_MaBao, p_TenBao, p_NoiDung, p_NgayBao);
+    INSERT INTO BAO(TENBAO)
+    VALUES (p_TenBao);
 
     COMMIT;
 
@@ -972,65 +1004,39 @@ BEGIN
 END;
 /
 
+-- insert LOG_DUONG_DI_BAO
 CREATE OR REPLACE PROCEDURE insert_LOG_DUONG_DI_BAO(
-    p_MaLogDuongDi    IN INTEGER,
-    p_MaBao           IN NVARCHAR2,
-    p_ThoiGian        IN DATE,
-    p_ViTri_x         NUMBER,
-    p_ViTri_y         NUMBER,
-    p_MucDo           IN NUMBER
+    p_MaBao           LOG_DUONG_DI_BAO.MaBao%TYPE,
+    p_ThoiGian        LOG_DUONG_DI_BAO.ThoiGian%TYPE,
+    p_ViTriWKT        VARCHAR2,
+    p_MucDo           LOG_DUONG_DI_BAO.MucDo%TYPE
 )
 IS
-    v_exists_bao NUMBER;
     v_ViTri SDO_GEOMETRY;
 BEGIN
-    
-    SELECT COUNT(*) 
-      INTO v_exists_bao
-      FROM BAO
-     WHERE MaBao = p_MaBao;
-
-    IF v_exists_bao = 0 THEN
-        RAISE_APPLICATION_ERROR(
-            -20050,
-            'MaBao "' || p_MaBao || '" không tồn tại trong bảng BAO.'
-        );
-    END IF;
-
-    v_ViTri := SDO_GEOMETRY(
-        2001, 
-        4326, 
-        SDO_POINT_TYPE(p_ViTri_x, p_ViTri_y, NULL), 
-        NULL, 
-        NULL  
-    );
+    BEGIN
+        v_ViTri := SDO_UTIL.FROM_WKTGEOMETRY(p_ViTriWKT);
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE_APPLICATION_ERROR(-20001, 'WKT không hợp lệ: '||SQLERRM);
+    END;
     
     INSERT INTO LOG_DUONG_DI_BAO(
-        MaLogDuongDi,
         MaBao,
         ThoiGian,
         ViTri,
         MucDo
     )
     VALUES (
-        p_MaLogDuongDi,
         p_MaBao,
         p_ThoiGian,
         v_ViTri,
         p_MucDo
     );
 
-    
     COMMIT;
 
 EXCEPTION
-    WHEN DUP_VAL_ON_INDEX THEN
-        ROLLBACK;
-        RAISE_APPLICATION_ERROR(
-            -20051,
-            'Đã tồn tại LOG_DUONG_DI_BAO với MaLogDuongDi = ' || p_MaLogDuongDi ||
-            ' và MaBao = "' || p_MaBao || '".'
-        );
     WHEN OTHERS THEN
         ROLLBACK;
         RAISE;
@@ -1038,11 +1044,10 @@ END;
 /
 
 -- VI. CREATE FUNCTION
-
- --Kiem tra dang nhap
+--  Kiem tra dang nhap
  CREATE OR REPLACE FUNCTION Fn_dang_nhap (
-    p_username NVARCHAR2,
-    p_password NVARCHAR2
+    p_username      APP_USER.USERNAME%TYPE,
+    p_password      APP_USER.PASSWORD%TYPE
 ) RETURN NVARCHAR2
 IS
     f_user_id NVARCHAR2(20);
@@ -1053,26 +1058,31 @@ BEGIN
     WHERE USERNAME = p_username
       AND PASSWORD = p_password;
 
-    RETURN f_user_id;
-EXCEPTION
+    RETURN USER_ID;
+
+    EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RETURN NULL;
 END;
 /
+
 --Kiem tra dang ky
-CREATE OR REPLACE FUNCTION Fn_kiem_tra_username_ton_tai (
+CREATE OR REPLACE FUNCTION Fn_kiem_tra_username_ton_tai(
     p_username NVARCHAR2
 ) RETURN BOOLEAN
 IS
     f_count INTEGER;
 BEGIN
-    SELECT COUNT(*) INTO f_count
+    SELECT COUNT(*) 
+    INTO f_count
     FROM APP_USER
     WHERE USERNAME = p_username;
 
     RETURN f_count > 0;
 END;
 /
+
+--Kiem tra cccd ton tai
 CREATE OR REPLACE FUNCTION Fn_kiem_tra_cccd_ton_tai (
     p_cccd NVARCHAR2
 ) RETURN BOOLEAN
