@@ -738,6 +738,60 @@ BEGIN
 END;
 /
 
+-- GIAM SAT TAU TRONG DOI TAU
+-- Lay thong tin vi tri moi nhat cua cac tau trong doi tau
+CREATE OR REPLACE PROCEDURE lay_vi_tri_moi_nhat_theo_tau(
+    p_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau      TAU_CA.MaChuTau%TYPE
+)
+IS
+BEGIN
+  OPEN p_cursor FOR
+    SELECT MaTauCa, ThoiGian, ViTriWKT, VanToc, HuongDiChuyen
+    FROM (
+        SELECT tc.MaTauCa, lht.ThoiGian,
+            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(lht.ViTri), 4000, 1) AS ViTriWKT,
+            lht.VanToc, lht.HuongDiChuyen,
+            ROW_NUMBER() OVER (
+            PARTITION BY tc.MaTauCa
+            ORDER BY lht.ThoiGian DESC
+            ) AS rn
+        FROM TAU_CA tc
+        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
+        JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
+        WHERE tc.MaChuTau = p_MaChuTau
+    )
+    WHERE rn = 1;
+END;
+/
+
+-- GIAM SAT TAU
+-- Lay thong tin vi tri moi nhat cua tat ca tau
+CREATE OR REPLACE PROCEDURE lay_vi_tri_moi_nhat_cua_tat_ca_tau(
+    p_cursor OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+  OPEN p_cursor FOR
+    SELECT MaTauCa, ThoiGian, ViTriWKT, VanToc, HuongDiChuyen
+    FROM (
+        SELECT tc.MaTauCa, lht.ThoiGian,
+            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(lht.ViTri), 4000, 1) AS ViTriWKT,
+            lht.VanToc, lht.HuongDiChuyen,
+            ROW_NUMBER() OVER (
+            PARTITION BY tc.MaTauCa
+            ORDER BY lht.ThoiGian DESC
+            ) AS rn
+        FROM TAU_CA tc
+        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
+        JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
+    )
+    WHERE rn = 1;
+END;
+/
+
+
+
 --3.NGU TRUONG
 -- CAP NHAT THONG TIN NGU TRUONG
 CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ngu_truong(
