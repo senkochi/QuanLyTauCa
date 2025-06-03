@@ -1,10 +1,36 @@
 -- IV. CREATE TRIGGER
+--TRIGGER
+CREATE OR REPLACE TRIGGER check_VI_PHAM
+AFTER INSERT ON LOG_HAI_TRINH
+FOR EACH ROW
+DECLARE
+    v_poly SDO_GEOMETRY;
+    v_Count NUMBER;
+BEGIN
+    v_Count := 0;
+
+    SELECT nt.ViTri
+    INTO v_poly
+    FROM CHUYEN_DANH_BAT cdb
+    JOIN NGU_TRUONG nt ON nt.MaNguTruong = cdb.MaNguTruong
+    WHERE cdb.MaChuyenDanhBat = :NEW.MaChuyenDanhBat;
+
+    SELECT count(*)
+    INTO v_Count
+    FROM VI_PHAM vp
+    WHERE vp.MaChuyenDanhBat = :NEW.MaChuyenDanhBat;
+
+    IF SDO_CONTAINS(v_poly, :NEW.ViTri) = 'FALSE' AND v_Count = 0 THEN
+        insert_VI_PHAM(:NEW.MaChuyenDanhBat, :NEW.ViTri, 'Vi pham vung bien');
+    END IF;
+END;
+/
 
 -- V. CREATE PROCEDURE
 
 -- PROCEDURE LAY DU LIEU
 -- Lay danh sach TAU_CA cua CHU_TAU
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_cua_chu_tau(
+CREATE OR REPLACE PROCEDURE get_owner_ships_list(
     p_cursor OUT SYS_REFCURSOR,
     p_MaChuTau   CHU_TAU.MaChuTau%TYPE
 )
@@ -20,7 +46,7 @@ END;
 /
 
 -- Lay danh sach CHU_TAU CHO DUYET
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_chu_tau_cho_duyet(
+CREATE OR REPLACE PROCEDURE get_owners_info_pending(
     chu_tau_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -32,7 +58,7 @@ END;
 /
 
 -- Lay danh sach TAU_CA CHO DUYET
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_cho_duyet (
+CREATE OR REPLACE PROCEDURE get_ships_info_pending(
     p_cursor OUT SYS_REFCURSOR
 ) 
 IS
@@ -44,7 +70,7 @@ END;
 /
 
 -- Lay danh sach TAU_CA va trang thai hoat dong TAU_CA cua CHU_TAU
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_va_trang_thai_hoat_dong_cua_tau_ca(
+CREATE OR REPLACE PROCEDURE get_owner_ships_list_and_status(
     tau_ca_cursor OUT SYS_REFCURSOR,
     p_MaChuTau        TAU_CA.p_MaChuTau%TYPE
 )
@@ -61,24 +87,8 @@ BEGIN
 END;
 /
 
--- Lay danh sach TAU_CA cua CHU_TAU
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tau_ca_cua_chu_tau(
-    p_cursor OUT SYS_REFCURSOR,
-    p_MaChuTau  NVARCHAR2
-)
-IS
-BEGIN
-    OPEN p_cursor FOR
-        SELECT * FROM TAU_CA t WHERE t.MaChuTau = p_MaChuTau;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
-END;
-/
-
 -- Lay danh sach tat ca TAU_CA DANG HOAT DONG
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_tat_ca_tau_ca_dang_hoat_dong(
+CREATE OR REPLACE PROCEDURE get_working_ships_list(
     
     p_cursor OUT SYS_REFCURSOR
 )
@@ -94,7 +104,7 @@ END;
 /
 
 -- Lay danh sach cac NGU_TRUONG
-CREATE OR REPLACE PROCEDURE Hien_thi_danh_sach_cac_ngu_truong(
+CREATE OR REPLACE PROCEDURE get_fishery_list(
     ngu_truong_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -105,7 +115,7 @@ END;
 /
 
 -- Lay thong tin NGU_TRUONG
-CREATE OR REPLACE PROCEDURE Hien_thi_ngu_truong(
+CREATE OR REPLACE PROCEDURE get_fishery_info(
     ngu_truong_cursor OUT SYS_REFCURSOR,
     p_MaNguTruong NVARCHAR2
 )
@@ -132,7 +142,7 @@ END;
 /
 
 -- Lay danh sach BAO
-CREATE OR REPLACE PROCEDURE hien_thi_danh_sach_bao(
+CREATE OR REPLACE PROCEDURE get_storm_list(
     bao_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -143,7 +153,7 @@ END;
 /
 
 -- Lay thong tin chi tiet BAO
-CREATE OR REPLACE PROCEDURE thong_tin_chi_tiet_Bao(
+CREATE OR REPLACE PROCEDURE get_storm_info(
     bao_cursor OUT SYS_REFCURSOR,
     p_MaBao NVARCHAR2
 )
@@ -157,7 +167,7 @@ END;
 
 -- PROCEDURE XU LY
 -- Tao admin
-CREATE OR REPLACE PROCEDURE INSERT_NEW_ADMIN(
+CREATE OR REPLACE PROCEDURE insert_ADMIN(
     p_USERNAME      APP_USER.USERNAME%TYPE,
     p_PASSWORD      APP_USER.PASSWORD%TYPE,
     p_HoTen         ADMIN.HoTen%TYPE,
@@ -190,8 +200,8 @@ END;
 --1 THONG TIN DANG KY 
 
 -- DANG KY THONG TIN CHU_TAU
--- Tao chu tau
-CREATE OR REPLACE PROCEDURE INSERT_NEW_CHU_TAU(
+-- Tao CHU_TAU
+CREATE OR REPLACE PROCEDURE insert_CHU_TAU(
     p_USERNAME      APP_USER.USERNAME%TYPE,
     p_PASSWORD      APP_USER.PASSWORD%TYPE,
     p_HoTen         CHU_TAU.HoTen%TYPE,
@@ -223,8 +233,8 @@ END;
 /
 
 -- DANG KY THONG TIN TAU_CA
--- Them NGHE moi
-CREATE OR REPLACE PROCEDURE INSERT_NGHE(
+-- Insert NGHE
+CREATE OR REPLACE PROCEDURE insert_NGHE(
     p_TenNghe       NGHE.TenNghe%TYPE
 )
 IS
@@ -241,7 +251,7 @@ BEGIN
 END;
 
 -- Tao TAU_CA
-CREATE OR REPLACE PROCEDURE INSERT_TAU_CA(
+CREATE OR REPLACE PROCEDURE insert_TAU_CA(
     p_SoDangKy           TAU_CA.SoDangKy%TYPE,
     p_LoaiTau            TAU_CA.LoaiTau%TYPE,
     p_ChieuDai           TAU_CA.ChieuDai%TYPE,
@@ -274,8 +284,8 @@ BEGIN
 END;
 /
 
--- Them NGHE cho TAU_CA
-CREATE OR REPLACE PROCEDURE INSERT_TAU_NGHE(
+-- Insert NGHE cho TAU_CA
+CREATE OR REPLACE PROCEDURE insert_TAU_NGHE(
     p_MaTauCa            TAU_NGHE.MaTauCa%TYPE,
     p_MaNghe             TAU_NGHE.MaNghe%TYPE,
     p_VungHoatDong       TAU_NGHE.VungHoatDong%TYPE
@@ -297,7 +307,7 @@ END;
 -- DUYET THONG TIN CHU_TAU
 -- Xem PROCEDURE LAY DU LIEU
 -- Cap nhat trang thai duyet CHU_TAU
-CREATE OR REPLACE PROCEDURE UPDATE_STATUS_CHU_TAU(
+CREATE OR REPLACE PROCEDURE update_approval_status_CHU_TAU(
     p_TrangThaiDuyet    CHU_TAU.TrangThaiDuyet%TYPE,
     p_MaChuTau          CHU_TAU.MaChuTau%TYPE
 )
@@ -312,7 +322,7 @@ END;
 -- DUYET THONG TIN TAU_CA
 -- Xem PROCEDURE LAY DU LIEU
 -- Cap nhat trang thai duyet TAU_CA
-CREATE OR REPLACE PROCEDURE UPDATE_STATUS_TAU_CA(
+CREATE OR REPLACE PROCEDURE update_approval_status_TAU_CA(
     p_TrangThaiDuyet    TAU_CA.TrangThaiDuyet%TYPE,
     p_MaTauCa           TAU_CA.MaTauCa%TYPE
 )
@@ -326,7 +336,7 @@ END;
 
 -- CAP NHAT THONG TIN CHU_TAU
 -- Update CHU_TAU
-CREATE OR REPLACE PROCEDURE UPDATE_CHU_TAU(
+CREATE OR REPLACE PROCEDURE update_info_CHU_TAU(
     p_MaChuTau        CHU_TAU.MaChuTau%TYPE,
     p_HoTen           CHU_TAU.HoTen%TYPE,
     p_SDT             CHU_TAU.SDT%TYPE,
@@ -347,7 +357,7 @@ END;
 
 -- CAP NHAT THONG TIN TAU_CA
 -- Update TAU_CA
-CREATE OR REPLACE PROCEDURE UPDATE_TAU_CA(
+CREATE OR REPLACE PROCEDURE update_info_TAU_CA(
     p_MaTauCa            TAU_CA.MaTauCa%TYPE,
     p_SoDangKy           TAU_CA.SoDangKy%TYPE,
     p_LoaiTau            TAU_CA.LoaiTau%TYPE,
@@ -373,7 +383,7 @@ END;
 
 -- THEO DOI TRANG THAI DUYET CHU_TAU
 -- Lay trang thai duyet CHU_TAU
-CREATE OR REPLACE PROCEDURE get_status_CHU_TAU(
+CREATE OR REPLACE PROCEDURE get_approval_status_CHU_TAU(
      chu_tau_cursor OUT SYS_REFCURSOR,
      p_MaChuTau         CHU_TAU.MaChuTau%TYPE
 )
@@ -388,7 +398,7 @@ END;
 
 -- THEO DOI TRANG THAI DUYET TAU_CA
 -- Lay danh sau TAU_CA va trang thai duyet TAU_CA
-CREATE OR REPLACE PROCEDURE get_status_TAU_CA(
+CREATE OR REPLACE PROCEDURE get_approval_status_TAU_CA(
     tau_ca_cursor OUT SYS_REFCURSOR,
     p_MaChuTau        CHU_TAU.MaChuTau%TYPE
 )
@@ -404,9 +414,8 @@ END;
 -- 2.HOAT DONG DANH BAT BAT
 
 -- DANG KY THONG TIN CHUYEN DANH BAT
-
 -- Tao CHUYEN_DANH_BAT
-CREATE OR REPLACE PROCEDURE INSERT_NEW_CHUYEN_DANH_BAT(
+CREATE OR REPLACE PROCEDURE insert_CHUYEN_DANH_BAT(
     p_MaTauCa             CHUYEN_DANH_BAT.MaTauCa%TYPE,
     p_MaNguTruong         CHUYEN_DANH_BAT.MaNguTruong%TYPE
 )
@@ -460,7 +469,7 @@ END;
 
 -- DUYET THONG TIN CHUYEN DANH BAT
 -- Cap nhat trang thai duyet CHUYEN_DANH_BAT
-CREATE OR REPLACE PROCEDURE UPDATE_STATUS_CHUYEN_DANH_BAT(
+CREATE OR REPLACE PROCEDURE update_approval_status_CHUYEN_DANH_BAT(
     p_TrangThaiDuyet    CHUYEN_DANH_BAT.TrangThaiDuyet%TYPE,
     p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
 )
@@ -493,9 +502,61 @@ BEGIN
 END;
 /
 
+-- GIAM SAT DANH BAT
+-- Lay thong tin vi tri moi nhat cua tat ca tau
+CREATE OR REPLACE PROCEDURE get_newest_location_info_all(
+    p_cursor OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+  OPEN p_cursor FOR
+    SELECT MaTauCa, ThoiGian, ViTriWKT, VanToc, HuongDiChuyen
+    FROM (
+        SELECT tc.MaTauCa, lht.ThoiGian,
+            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(lht.ViTri), 4000, 1) AS ViTriWKT,
+            lht.VanToc, lht.HuongDiChuyen,
+            ROW_NUMBER() OVER (
+            PARTITION BY tc.MaTauCa
+            ORDER BY lht.ThoiGian DESC
+            ) AS rn
+        FROM TAU_CA tc
+        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
+        JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
+    )
+    WHERE rn = 1;
+END;
+/
+
+-- GIAM SAT TAU_CA TRONG DOI TAU
+-- Lay thong tin vi tri moi nhat cua cac tau trong doi tau
+CREATE OR REPLACE PROCEDURE get_newest_location_info_owner(
+    p_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau      TAU_CA.MaChuTau%TYPE
+)
+IS
+BEGIN
+  OPEN p_cursor FOR
+    SELECT MaTauCa, ThoiGian, ViTriWKT, VanToc, HuongDiChuyen
+    FROM (
+        SELECT tc.MaTauCa, lht.ThoiGian,
+            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(lht.ViTri), 4000, 1) AS ViTriWKT,
+            lht.VanToc, lht.HuongDiChuyen,
+            ROW_NUMBER() OVER (
+            PARTITION BY tc.MaTauCa
+            ORDER BY lht.ThoiGian DESC
+            ) AS rn
+        FROM TAU_CA tc
+        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
+        JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
+        WHERE tc.MaChuTau = p_MaChuTau
+    )
+    WHERE rn = 1;
+END;
+/
+
 -- CAP NHAT TRANG THAI ROI / CAP CANG
 -- Cap nhat trang thai roi cang
-CREATE OR REPLACE PROCEDURE cap_nhat_trang_thai_roi_cang(
+CREATE OR REPLACE PROCEDURE update_working_status_depart(
     p_MaTauCa   CHUYEN_DANH_BAT.MaTauCa%TYPE,
     p_CangDi    CHUYEN_DANH_BAT.CangDi%TYPE
 )
@@ -549,7 +610,7 @@ END;
 /
 
 -- Cap nhat trang thai cap cang
-CREATE OR REPLACE PROCEDURE cap_nhat_trang_thai_cap_cang(
+CREATE OR REPLACE PROCEDURE update_working_status_dock(
     p_MaTauCa   CHUYEN_DANH_BAT.MaTauCa%TYPE,
     p_CangVe    CHUYEN_DANH_BAT.CangVe%TYPE
 )
@@ -595,8 +656,8 @@ END;
 /
 
 -- CAP NHAT NHAT KY DANH BAT
--- INSERT ME_CA
-CREATE OR REPLACE PROCEDURE INSERT_NEW_ME_CA(
+-- Insert ME_CA
+CREATE OR REPLACE PROCEDURE insert_ME_CA(
     p_MaChuyenDanhBat   CHUYENDANHBAT.MaChuyenDanhBat%TYPE,
     p_ThoiGianThaLuoi     CHUYENDANHBAT.ThoiGianThaLuoi%TYPE,
     p_ThoiGianKeoLuoi     CHUYENDANHBAT.ThoiGianKeoLuoi%TYPE,
@@ -609,8 +670,8 @@ BEGIN
 END;
 /
 
---INSERT CHI TIET ME_CA
-CREATE OR REPLACE PROCEDURE INSERT_DANHBAT_THUYSAN(
+--Insert CHI TIET ME_CA
+CREATE OR REPLACE PROCEDURE insert_DANHBAT_THUYSAN(
     p_MaChuyenDanhBat       CHUYENDANHBAT.MaChuyenDanhBat%TYPE,
     p_MaMeCa                CHUYENDANHBAT.MaMeCa%TYPE,
     p_MaThuySan             CHUYENDANHBAT.MaThuySan%TYPE,
@@ -623,9 +684,64 @@ BEGIN
 END;
 /
 
+-- THEO DOI HAI TRINH
+-- Lay danh sach LOG toa do
+CREATE OR REPLACE PROCEDURE get_log_list_CHUYEN_DANH_BAT(
+    p_cursor OUT SYS_REFCURSOR,
+    p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
+)
+IS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT lht.MaLogHaiTrinh, lht.ThoiGian, lht.ViTri, lht.VanToc, lht.HuongDiChuyen
+        FROM LOG_HAI_TRINH lht
+        WHERE lht.MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
+
+-- CAP NHAT VI TRI TAU
+-- Them 1 diem toa do vao LOG
+CREATE OR REPLACE PROCEDURE insert_LOG_HAI_TRINH_for_CHUYEN_DANH_BAT(
+    p_MaChuyenDanhBat     LOG_HAI_TRINH.MaChuyenDanhBat%TYPE,
+    p_ThoiGian            LOG_HAI_TRINH.ThoiGian%TYPE,
+    p_ViTri               VARCHAR2,
+    p_VanToc              LOG_HAI_TRINH.VanToc%TYPE,
+    p_HuongDiChuyen       LOG_HAI_TRINH.HuongDiChuyen%TYPE
+)
+IS
+   v_exists NUMBER; 
+BEGIN
+    SELECT COUNT(*) 
+        INTO v_exists
+        FROM CHUYEN_DANH_BAT
+    WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+    IF v_exists = 0 THEN
+        RAISE_APPLICATION_ERROR(
+            -20010, 
+            'MaChuyenDanhBat "' || p_MaChuyenDanhBat || '" khong ton tai.'
+        );
+    END IF;
+
+    INSERT INTO LOG_HAI_TRINH(MaChuyenDanhBat, ThoiGian, ViTri, VanToc, HuongDiChuyen)
+    VALUES (p_MaChuyenDanhBat, p_ThoiGian, SDO_UTIL.FROM_WKTGEOMETRY(p_ViTri), p_VanToc, p_HuongDiChuyen);
+
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+
 -- TRUY XUAT NHAT KY DANH BAT
 -- Lay nhat ky danh bat
-CREATE OR REPLACE PROCEDURE truy_xuat_nhat_ky_danh_bat(
+CREATE OR REPLACE PROCEDURE get_fishing_diary(
     thong_tin_tau_cursor OUT SYS_REFCURSOR,
     thong_tin_danh_bat_cursor OUT SYS_REFCURSOR,
     p_MaChuyenDanhBat          CHUYEN_DANH_BAT.MaChuyenDanhBatTauCa%TYPE 
@@ -669,7 +785,7 @@ END;
 /
 
 -- TRUY XUAT NGUON GOC THUY SAN
-CREATE OR REPLACE PROCEDURE truy_xuat_nguon_goc_hai_san(
+CREATE OR REPLACE PROCEDURE get_aquatic_origin(
     thuy_san_cursor OUT SYS_REFCURSOR,
     p_MaThuySan NVARCHAR2
 )
@@ -683,51 +799,16 @@ BEGIN
 END;
 /
 
-
--- THEO DOI HAI TRINH
--- Lay danh sach LOG toa do
-CREATE OR REPLACE PROCEDURE theo_doi_hai_trinh(
-    p_cursor OUT SYS_REFCURSOR,
-    p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
+-- Insert VI_PHAM
+CREATE OR REPLACE PROCEDURE insert_VI_PHAM(
+    p_MaChuyenDanhBat   VI_PHAM.MaChuyenDanhBat%TYPE,
+    p_ViTri             VI_PHAM.ViTri%TYPE,
+    p_MoTa              VI_PHAM.MoTa%TYPE
 )
 IS
 BEGIN
-    OPEN p_cursor FOR
-        SELECT lht.MaLogHaiTrinh, lht.ThoiGian, lht.ViTri, lht.VanToc, lht.HuongDiChuyen
-        FROM LOG_HAI_TRINH lht
-        WHERE lht.MaChuyenDanhBat = p_MaChuyenDanhBat;
-
-    EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
-END;
-/
-
--- Them 1 diem toa do vao LOG
-CREATE OR REPLACE PROCEDURE INSERT_LOG_HAI_TRINH(
-    p_MaChuyenDanhBat     LOG_HAI_TRINH.MaChuyenDanhBat%TYPE,
-    p_ThoiGian            LOG_HAI_TRINH.ThoiGian%TYPE,
-    p_ViTri               VARCHAR2,
-    p_VanToc              LOG_HAI_TRINH.VanToc%TYPE,
-    p_HuongDiChuyen       LOG_HAI_TRINH.HuongDiChuyen%TYPE
-)
-IS
-   v_exists NUMBER; 
-BEGIN
-    SELECT COUNT(*) 
-        INTO v_exists
-        FROM CHUYEN_DANH_BAT
-    WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
-
-    IF v_exists = 0 THEN
-        RAISE_APPLICATION_ERROR(
-            -20010, 
-            'MaChuyenDanhBat "' || p_MaChuyenDanhBat || '" khong ton tai.'
-        );
-    END IF;
-
-    INSERT INTO LOG_HAI_TRINH(MaChuyenDanhBat, ThoiGian, ViTri, VanToc, HuongDiChuyen)
-    VALUES (p_MaChuyenDanhBat, p_ThoiGian, SDO_UTIL.FROM_WKTGEOMETRY(p_ViTri), p_VanToc, p_HuongDiChuyen);
+    INSERT INTO VI_PHAM(MaChuyenDanhBat, ViTri, MoTa)
+    VALUES (p_MaChuyenDanhBat, p_ViTri, p_MoTa);
 
     COMMIT;
 
@@ -738,148 +819,59 @@ BEGIN
 END;
 /
 
--- GIAM SAT TAU TRONG DOI TAU
--- Lay thong tin vi tri moi nhat cua cac tau trong doi tau
-CREATE OR REPLACE PROCEDURE lay_vi_tri_moi_nhat_theo_tau(
-    p_cursor OUT SYS_REFCURSOR,
-    p_MaChuTau      TAU_CA.MaChuTau%TYPE
+-- Cap nhat MoTa cua VI_PHAM
+CREATE OR REPLACE PROCEDURE update_description_VI_PHAM(
+    p_MaViPham          VI_PHAM.MaViPham%TYPE,
+    p_MoTa              VI_PHAM.MoTa%TYPE
 )
 IS
 BEGIN
-  OPEN p_cursor FOR
-    SELECT MaTauCa, ThoiGian, ViTriWKT, VanToc, HuongDiChuyen
-    FROM (
-        SELECT tc.MaTauCa, lht.ThoiGian,
-            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(lht.ViTri), 4000, 1) AS ViTriWKT,
-            lht.VanToc, lht.HuongDiChuyen,
-            ROW_NUMBER() OVER (
-            PARTITION BY tc.MaTauCa
-            ORDER BY lht.ThoiGian DESC
-            ) AS rn
-        FROM TAU_CA tc
-        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
-        JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
-        WHERE tc.MaChuTau = p_MaChuTau
-    )
-    WHERE rn = 1;
+    UPDATE VI_PHAM
+    SET MoTa = p_MoTa
+    WHERE MaViPham =p_MaViPham;
+
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
 END;
 /
-
--- GIAM SAT TAU
--- Lay thong tin vi tri moi nhat cua tat ca tau
-CREATE OR REPLACE PROCEDURE lay_vi_tri_moi_nhat_cua_tat_ca_tau(
-    p_cursor OUT SYS_REFCURSOR
-)
-IS
-BEGIN
-  OPEN p_cursor FOR
-    SELECT MaTauCa, ThoiGian, ViTriWKT, VanToc, HuongDiChuyen
-    FROM (
-        SELECT tc.MaTauCa, lht.ThoiGian,
-            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(lht.ViTri), 4000, 1) AS ViTriWKT,
-            lht.VanToc, lht.HuongDiChuyen,
-            ROW_NUMBER() OVER (
-            PARTITION BY tc.MaTauCa
-            ORDER BY lht.ThoiGian DESC
-            ) AS rn
-        FROM TAU_CA tc
-        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
-        JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
-    )
-    WHERE rn = 1;
-END;
-/
-
-
 
 --3.NGU TRUONG
--- CAP NHAT THONG TIN NGU TRUONG
-CREATE OR REPLACE PROCEDURE cap_nhat_thong_tin_ngu_truong(
-    p_MaNguTruong         NVARCHAR2,
-    p_TenNguTruong        NVARCHAR2,
-    p_XY_DS               SYS.ODCINUMBERLIST,
-    p_SRID                NUMBER,
-    p_SoLuongTauHienTai   INTEGER,
-    p_SoLuongTauToiDa     INTEGER
+
+-- THEM THONG TIN NGU TRUONG
+-- insert_NGU_TRUONG
+CREATE OR REPLACE PROCEDURE insert_NGU_TRUONG(
+    p_TenNguTruong        NGU_TRUONG.TenNguTruong%TYPE,
+    p_ViTri               CLOB,
+    p_SoLuongTauToiDa     NGU_TRUONG.SoLuongTauToiDa%TYPE
 )
 IS 
     v_ViTri SDO_GEOMETRY;
-    v_Count NUMBER;
-    v_rowcount NUMBER;
 BEGIN
-    --kiem tra ma ngu truong co ton tai khong
-    SELECT COUNT(*) INTO v_rowcount
-    FROM NGU_TRUONG
-    WHERE MaNguTruong = p_MaNguTruong;
-
-    IF v_rowcount = 0 THEN
-        RAISE_APPLICATION_ERROR(
-            -20001,
-            'MaNguTruong "' || p_MaNguTruong || '" khong ton tai.'
-        );
-    END IF;
-    --Kiem tra so luong toa do hop le
-    v_Count := p_XY_DS.COUNT;
-    IF MOD(v_Count, 2) != 0 THEN
-    RAISE_APPLICATION_ERROR(-20002,'Danh sach toa do khong hop le');
-    END IF;
-
-    --Kiem tra toa do dau va cuoi cung co trung nhau khongkhong
-    IF (p_XY_DS(1)    != p_XY_DS(v_Count - 1)) OR
-       (p_XY_DS(2)    != p_XY_DS(v_Count    )) THEN
-        RAISE_APPLICATION_ERROR(-20003, 'Polygon khong khep kin: diem dau va diem cuoi phai trung nhau.');
-    END IF;
-
-     v_ViTri := SDO_GEOMETRY(
-        2003, -- Geometry type (2003 for 2D) 
-        p_SRID, --he quy chieu khong gian 
-        NULL, --sdo_point--dung cho diem don lele
-        SDO_ELEM_INFO_ARRAY(1, 1003, 1),--(mang thong tin cau tructruc) 1 vi tri bat dau, 1003 la polygon vong ngoai,1 noi cac dinh bang duong htanghtang
-        p_XY_DS  
-    );
-    --Gan toa do vao v_ViTri
-    --v_ViTri.SDO_ORDINATES := p_XY_DS;
-    --Gan SRID vao v_ViTri
-    --v_ViTri.SDO_SRID := p_SRID;
-    --Update thong tin ngu truong
-
-    
-    UPDATE NGU_TRUONG
-    SET TenNguTruong = p_TenNguTruong,ViTri=v_ViTri,SoLuongTauHienTai = p_SoLuongTauHienTai,SoLuongTauToiDa = p_SoLuongTauToiDa
-    WHERE MANGUTRUONG = p_MaNguTruong;
-
+    BEGIN
+        v_ViTri := SDO_UTIL.FROM_WKTGEOMETRY(p_ViTri);
     EXCEPTION
-    WHEN OTHERS THEN
-        -- In thông báo lỗi ra màn hình, rồi kết thúc thủ tục
-        DBMS_OUTPUT.PUT_LINE('ERROR: ' || SQLERRM);
-        RETURN;
+        WHEN OTHERS THEN
+            RAISE_APPLICATION_ERROR(-20001, 'WKT không hợp lệ: '||SQLERRM);
+    END;
+
+    INSERT INTO NGU_TRUONG (TenNguTruong, ViTri, SoLuongTauToiDa)
+        VALUES (p_TenNguTruong, v_ViTri, p_SoLuongTauToiDa);
+
+    COMMIT;
 END;
 /
 
---4.THONG KE
+-- XEM THONG TIN NGU TRUONG
 
---Vi pham
 
-CREATE OR REPLACE PROCEDURE INSERT_VI_PHAM(
-    p_MaViPham NVARCHAR2,
-    p_MaChuyenDanhBat NVARCHAR2,
-    p_TenViPham NVARCHAR2,
-    p_MucDoViPham NVARCHAR2,
-    p_MoTa NVARCHAR2
-)
-IS
-BEGIN
-    INSERT INTO VI_PHAM(MAVIPHAM, MaChuyenDanhBat, TenViPham, MucDoViPham, MoTa)
-    VALUES (p_MaViPham, p_MaChuyenDanhBat, p_TenViPham, p_MucDoViPham, p_MoTa);
-
-    COMMIT;
-
-    EXCEPTION
-    WHEN OTHERS THEN
-        ROLLBACK;
-        RAISE;
-END;
-CREATE OR REPLACE PROCEDURE hien_thi_danh_sach_vi_pham(
+--4. THONG KE
+-- VI_PHAM
+-- Lay danh sach VI_PHAM
+CREATE OR REPLACE PROCEDURE get_list_VI_PHAM(
     vi_pham_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -889,86 +881,57 @@ BEGIN
 END;
 /
 
-CREATE OR REPLACE PROCEDURE thong_ke_so_luong_vi_pham_chuyendb(
-    vi_pham_cursor OUT SYS_REFCURSOR,
-    p_MaChuyenDanhBat NVARCHAR2
+-- THONG KE SO LUONG VI PHAM THEO TAU
+CREATE OR REPLACE PROCEDURE statistics_VI_PHAM_by_TAU_CA(
+    vi_pham_cursor OUT SYS_REFCURSOR
 )
 IS
 BEGIN
     OPEN vi_pham_cursor FOR
-        SELECT * FROM VI_PHAM vp
-        Where vp.MaChuyenDanhBat = p_MaChuyenDanhBat;
+        SELECT tc.MaTauCa, tc.SoDangKy, count(vp.MaViPham) AS SoLuongLoiViPham
+        FROM VI_PHAM vp
+        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaChuyenDanhBat = vp.MaChuyenDanhBat
+        JOIN TAU_CA tc ON tc.MaTauCa = cdb.MaTauCa
+        GROUP BY tc.MaTauCa
+        ORDER BY SoLuongLoiViPham DESC;
 END;
 /
 
-CREATE OR REPLACE PROCEDURE thong_ke_so_luong_vi_pham_maVP(
-    vi_pham_cursor OUT SYS_REFCURSOR,
-    p_MaViPham NVARCHAR2
-)
-IS
-BEGIN
-    OPEN vi_pham_cursor FOR
-        SELECT * FROM VI_PHAM vp
-        Where vp.MAVIPHAM = p_MaViPham;
-END;
-/
-
---Bao
-CREATE OR REPLACE PROCEDURE INSERT_BAO(
-    p_MaBao NVARCHAR2,
-    p_TenBao NVARCHAR2,
-    p_NoiDung NVARCHAR2,
-    p_NgayBao DATE
-)
-IS
-BEGIN
-    INSERT INTO BAO(MABAO, TENBAO, NOIDUNG, NGAYBAO)
-    VALUES (p_MaBao, p_TenBao, p_NoiDung, p_NgayBao);
-
-    COMMIT;
-
-    EXCEPTION
-    WHEN OTHERS THEN
-        ROLLBACK;
-        RAISE;
-END;
-
---Thuy san
-CREATE OR REPLACE PROCEDURE thong_ke_so_luong_thuy_san(
+-- THUY SAN
+-- THONG KE SAN LUONG THEO LOAI THUY SAN
+CREATE OR REPLACE PROCEDURE thong_ke_san_luong_thuy_san_theo_loai(
     thuy_san_cursor OUT SYS_REFCURSOR
 )
 IS
 BEGIN
     OPEN thuy_san_cursor FOR
-        SELECT * FROM THUY_SAN;
+        SELECT ts.MaThuySan, ts.TenLoaiThuySan, SUM(dbts.KhoiLuong) AS TongKhoiLuong
+        FROM THUY_SAN ts
+        JOIN DANHBAT_THUYSAN dbts ON dbts.MaThuySan = ts.MaThuySan
+        GROUP BY ts.MaThuySan, ts.TenLoaiThuySan;
 END;
 /
 
-CREATE OR REPLACE PROCEDURE thong_ke_so_luong_thuy_san_theo_loai(
-    thuy_san_cursor OUT SYS_REFCURSOR,
-    p_TenLoaiThuySan NVARCHAR2
+-- THONG KE SO LUONG BAO THEO NAM
+CREATE OR REPLACE PROCEDURE thong_ke_so_bao_theo_nam(
+    bao_cursor OUT SYS_REFCURSOR
 )
 IS
 BEGIN
-    OPEN thuy_san_cursor FOR
-        SELECT * FROM THUY_SAN ts
-        WHERE ts.TenLoaiThuySan = p_TenLoaiThuySan;
+    OPEN bao_cursor FOR
+        SELECT 
+            EXTRACT(YEAR FROM ThoiGian) AS Nam,
+            COUNT(*)                       AS SoLuongBao
+        FROM BAO b
+        JOIN LOG_DUONG_DI_BAO lddb ON lddb.MaBao = b.MaBao
+        GROUP BY EXTRACT(YEAR FROM ThoiGian)
+        ORDER BY Nam;
 END;
-
-CREATE OR REPLACE PROCEDURE thong_ke_so_luong_thuy_san_theo_ma(
-    thuy_san_cursor OUT SYS_REFCURSOR,
-    p_MaThuySan NVARCHAR2
-)
-IS
-BEGIN
-    OPEN thuy_san_cursor FOR
-        SELECT * FROM THUY_SAN ts
-        WHERE ts.MaThuySan = p_MaThuySan;
-END;
-
---Khi tuong thuy van
-
-CREATE OR REPLACE PROCEDURE INSERT_THOI_TIET(
+/
+-- DANG SUA O DAY
+--5. KHI TUONG THUY VAN
+-- insert THOI_TIET
+CREATE OR REPLACE PROCEDURE insert_THOI_TIET(
     p_MaDuBao         NVARCHAR2,
     p_ThoiGianDuBao   DATE,
     p_KhuVucAnhHuong  NVARCHAR2,
@@ -986,8 +949,30 @@ BEGIN
         ROLLBACK;
         RAISE;
 END;
+/
 
-CREATE OR REPLACE PROCEDURE INSERT_LOG_DUONG_DI_BAO(
+-- insert BAO
+CREATE OR REPLACE PROCEDURE insert_BAO(
+    p_MaBao NVARCHAR2,
+    p_TenBao NVARCHAR2,
+    p_NoiDung NVARCHAR2,
+    p_NgayBao DATE
+)
+IS
+BEGIN
+    INSERT INTO BAO(MABAO, TENBAO, NOIDUNG, NGAYBAO)
+    VALUES (p_MaBao, p_TenBao, p_NoiDung, p_NgayBao);
+
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE insert_LOG_DUONG_DI_BAO(
     p_MaLogDuongDi    IN INTEGER,
     p_MaBao           IN NVARCHAR2,
     p_ThoiGian        IN DATE,
