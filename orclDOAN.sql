@@ -126,7 +126,7 @@ CREATE TABLE NGU_TRUONG (
 -- 14. Bang THOI_TIET
 CREATE TABLE THOI_TIET (
     MaDuBao         NVARCHAR2(20) PRIMARY KEY,
-    ThoiGianDuBao   DATE            NOT NULL,
+    ThoiGianDuBao   DATE            DEFAULT SYSDATE,
     KhuVucAnhHuong  NVARCHAR2(100)  NOT NULL,
     ChiTietDuBao    NVARCHAR2(400)  NOT NULL
 );
