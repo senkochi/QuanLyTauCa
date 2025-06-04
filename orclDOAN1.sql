@@ -66,7 +66,7 @@ END;
 /
 
 -- Lay danh sach CHU_TAU CHO DUYET
-CREATE OR REPLACE PROCEDURE get_owners_info_pending(
+CREATE OR REPLACE PROCEDURE get_owners_pending_list(
     chu_tau_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -77,15 +77,41 @@ BEGIN
 END;
 /
 
+-- Lay thong tin chi tiet CHU_TAU
+CREATE OR REPLACE PROCEDURE get_owners_info(
+    chu_tau_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau      CHU_TAU.MaChuTau%TYPE
+)
+IS
+BEGIN
+    OPEN chu_tau_cursor FOR
+        SELECT * FROM CHU_TAU ct
+        WHERE ct.MaChuTau = p_MaChuTau;
+END;
+/
+
 -- Lay danh sach TAU_CA CHO DUYET
-CREATE OR REPLACE PROCEDURE get_ships_info_pending(
+CREATE OR REPLACE PROCEDURE get_ships_pending_list(
     p_cursor OUT SYS_REFCURSOR
 ) 
-IS
+IS 
 BEGIN
     OPEN p_cursor FOR
         SELECT * FROM TAU_CA tc
         WHERE tc.TrangThaiDuyet = 'DANG CHO';
+END;
+/
+
+-- Lay thong tin chi tiet TAU_CA
+CREATE OR REPLACE PROCEDURE get_ship_info(
+    tau_ca_cursor OUT SYS_REFCURSOR,
+    p_MaTauCa      TAU_CA.MaChuTau%TYPE
+)
+IS
+BEGIN
+    OPEN tau_ca_cursor FOR
+        SELECT * FROM TAU_CA tc
+        WHERE tc.MaChuTau = p_MaTauCa;
 END;
 /
 
@@ -1045,7 +1071,7 @@ END;
 
 -- VI. CREATE FUNCTION
 --  Kiem tra dang nhap
- CREATE OR REPLACE FUNCTION Fn_dang_nhap (
+CREATE OR REPLACE FUNCTION Fn_dang_nhap(
     p_username      APP_USER.USERNAME%TYPE,
     p_password      APP_USER.PASSWORD%TYPE
 ) RETURN NVARCHAR2
@@ -1055,8 +1081,7 @@ BEGIN
     SELECT USER_ID
     INTO f_user_id
     FROM APP_USER
-    WHERE USERNAME = p_username
-      AND PASSWORD = p_password;
+    WHERE USERNAME = p_username AND PASSWORD = p_password;
 
     RETURN USER_ID;
 
