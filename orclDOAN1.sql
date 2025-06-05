@@ -49,7 +49,6 @@ END;
 -- V. CREATE PROCEDURE
 
 -- PROCEDURE LAY DU LIEU
-
 -- Lay danh sach tat ca TAU_CA
 CREATE OR REPLACE PROCEDURE get_ships_list(
     p_cursor OUT SYS_REFCURSOR
