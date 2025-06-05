@@ -82,7 +82,7 @@ END;
 /
 
 -- Lay danh sach CHU_TAU CHO DUYET
-CREATE OR REPLACE PROCEDURE get_owners_info_pending(
+CREATE OR REPLACE PROCEDURE get_owners_pending_list(
     chu_tau_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -94,10 +94,10 @@ END;
 /
 
 -- Lay danh sach TAU_CA CHO DUYET
-CREATE OR REPLACE PROCEDURE get_ships_info_pending(
+CREATE OR REPLACE PROCEDURE get_ships_pending_list(
     p_cursor OUT SYS_REFCURSOR
 ) 
-IS
+IS 
 BEGIN
     OPEN p_cursor FOR
         SELECT * FROM TAU_CA tc
@@ -105,8 +105,34 @@ BEGIN
 END;
 /
 
+-- Lay thong tin chi tiet CHU_TAU
+CREATE OR REPLACE PROCEDURE get_owner_info(
+    chu_tau_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau      CHU_TAU.MaChuTau%TYPE
+)
+IS
+BEGIN
+    OPEN chu_tau_cursor FOR
+        SELECT * FROM CHU_TAU ct
+        WHERE ct.MaChuTau = p_MaChuTau;
+END;
+/
+
+-- Lay thong tin chi tiet TAU_CA
+CREATE OR REPLACE PROCEDURE get_ship_info(
+    tau_ca_cursor OUT SYS_REFCURSOR,
+    p_MaTauCa      TAU_CA.MaChuTau%TYPE
+)
+IS
+BEGIN
+    OPEN tau_ca_cursor FOR
+        SELECT * FROM TAU_CA tc
+        WHERE tc.MaChuTau = p_MaTauCa;
+END;
+/
+
 -- Lay danh sach TAU_CA va trang thai hoat dong TAU_CA cua CHU_TAU
-CREATE OR REPLACE PROCEDURE get_owner_ships_list_and_status(
+CREATE OR REPLACE PROCEDURE get_owner_ships_list_and_working_status(
     tau_ca_cursor OUT SYS_REFCURSOR,
     p_MaChuTau        TAU_CA.p_MaChuTau%TYPE
 )
@@ -123,9 +149,63 @@ BEGIN
 END;
 /
 
+-- Lay thong tin CHUYEN_DANH_BAT
+CREATE OR REPLACE PROCEDURE get_voyages_info(
+    cdb_cursor OUT SYS_REFCURSOR,
+    p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
+)
+IS
+BEGIN
+    OPEN cdb_cursor FOR
+        SELECT *
+        FROM CHUYEN_DANH_BAT cdb
+        WHERE cdb.MaChuyenDanhBat = p_MaChuyenDanhBat;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
+
+-- Lay danh sach CHUYEN_DANH_BAT cho duyet
+CREATE OR REPLACE PROCEDURE get_voyages_pending_list(
+    cdb_cursor OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN cdb_cursor FOR
+        SELECT tc.MaTauCa, cdb.MaChuyenDanhBat, cdb.TrangThaiDuyet
+        FROM CHUYEN_DANH_BAT cdb
+        JOIN TAU_CA tc ON tc.MaTauCa = cdb.MaTauCa
+        WHERE cdb.TrangThaiDuyet = 'CHO DUYET';
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
+
+-- Lay danh sach CHUYEN_DANH_BAT cua TAU_CA
+CREATE OR REPLACE PROCEDURE get_ship_voyages_list(
+    cdb_cursor OUT SYS_REFCURSOR,
+    p_MaTauCa   CHUYEN_DANH_BAT.MaTauCa%tTYPE
+)
+IS
+BEGIN
+    OPEN cdb_cursor FOR
+        SELECT tc.MaTauCa, tc.TrangThaiHoatDong 
+        FROM CHUYEN_DANH_BAT cdb
+        JOIN TAU_CA tc ON tc.MaTauCa = cdb.MaTauCa
+        WHERE cdb.TrangThaiDuyet = 'CHO DUYET';
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END;
+/
+
 -- Lay danh sach tat ca TAU_CA DANG HOAT DONG
 CREATE OR REPLACE PROCEDURE get_working_ships_list(
-    
     p_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -171,7 +251,9 @@ BEGIN
 
 
     OPEN ngu_truong_cursor FOR
-        SELECT* FROM NGU_TRUONG ng WHERE ng.MANGUTRUONG = p_MaNguTruong; 
+        SELECT * 
+        FROM NGU_TRUONG ng 
+        WHERE ng.MANGUTRUONG = p_MaNguTruong; 
     
 
 END;
@@ -241,16 +323,13 @@ BEGIN
     INSERT INTO ADMIN(MaAdmin, HoTen, CoQuan, CCCD)
     VALUES(p_MaAdmin, p_HoTen, p_CoQuan, p_CCCD);
 
-    COMMIT;
-
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
 
---1 THONG TIN DANG KY 
+--1. THONG TIN DANG KY 
 
 -- DANG KY THONG TIN CHU_TAU
 -- Tao CHU_TAU
@@ -275,13 +354,11 @@ BEGIN
 
     INSERT INTO CHU_TAU(MaChuTau, HoTen, SDT, DiaChi, CCCD)
     VALUES(p_MaChuTau, p_HoTen, p_SDT, NULLIF(TRIM(p_DiaChi), ''), p_CCCD);
-    COMMIT;
 
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
-        RAISE;
-
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_CHU_TAU: ' || SQLERRM);
 END;
 /
 
@@ -295,15 +372,12 @@ BEGIN
     INSERT INTO NGHE(TenNghe)
     VALUES (p_TenNghe);
 
-    COMMIT;
-
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 
--- Tao TAU_CA
+-- Insert TAU_CA
 CREATE OR REPLACE PROCEDURE insert_TAU_CA(
     p_SoDangKy           TAU_CA.SoDangKy%TYPE,
     p_LoaiTau            TAU_CA.LoaiTau%TYPE,
@@ -328,11 +402,8 @@ BEGIN
         RAISE_APPLICATION_ERROR(-number, 'HO SO CHU TAU CHUA DUOC DUYET');
     END IF;
 
-    COMMIT;
-
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -348,11 +419,8 @@ BEGIN
     INSERT INTO TAU_NGHE(MaTauCa, MaNghe, VungHoatDong)
     VALUES (p_MaTauCa, p_MaNghe, p_VungHoatDong);
 
-    COMMIT;
-
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -369,6 +437,10 @@ BEGIN
     UPDATE CHU_TAU
     SET TrangThaiDuyet = p_TrangThaiDuyet
     WHERE MaChuTau = p_MaChuTau;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -384,6 +456,10 @@ BEGIN
     UPDATE TAU_CA
     SET TrangThaiDuyet = p_TrangThaiDuyet
     WHERE MaTauCa = p_MaTauCa;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -405,6 +481,10 @@ BEGIN
         CCCD = p_CCCD,
         TrangThaiDuyet = 'DANG CHO'
     WHERE MaChuTau = p_MaChuTau;
+    
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -430,7 +510,10 @@ BEGIN
         TrangThaiDuyet = 'DANG CHO',
         MaNgheChinh = p_MaNgheChinh
     WHERE MaTauCa = p_MaTauCa;
-
+    
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -446,6 +529,10 @@ BEGIN
         SELECT ct.TrangThaiDuyet
         FROM CHU_TAU ct
         WHERE ct.MaChuTau = p_MaChuTau;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -461,6 +548,10 @@ BEGIN
         SELECT tc.MaTauCa, tc.SoDangKy, tc.TrangThaiDuyet
         FROM TAU_CA tc
         WHERE tc.MaChuTau = p_MaChuTau;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -511,11 +602,8 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20003, 'HO SO CHU TAU HOAC HO SO TAU CA CHUA DUOC DUYET');
     END IF;
 
-    COMMIT;
-
-EXCEPTION
+    EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -552,6 +640,10 @@ BEGIN
         SET SoLuongTauHienTai = SoLuongTauHienTai - 1
         WHERE MaNguTruong = p_MaNguTruong;
     END IF;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -577,6 +669,10 @@ BEGIN
         JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
     )
     WHERE rn = 1;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -604,6 +700,10 @@ BEGIN
         WHERE tc.MaChuTau = p_MaChuTau
     )
     WHERE rn = 1;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -657,7 +757,6 @@ BEGIN
 
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -703,7 +802,6 @@ BEGIN
 
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -734,6 +832,10 @@ IS
 BEGIN
     INSERT INTO DANHBAT_THUYSAN(MaChuyenDanhBat, MaMeCa, MaThuySan, KhoiLuong)
     VALUES (p_MaChuyenDanhBat, p_MaMeCa, p_MaThuySan, p_KhoiLuong);
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -744,19 +846,7 @@ CREATE OR REPLACE PROCEDURE get_log_list_CHUYEN_DANH_BAT(
     p_MaChuyenDanhBat   CHUYEN_DANH_BAT.MaChuyenDanhBat%TYPE
 )
 IS
-    v_count NUMBER;
 BEGIN
-     SELECT COUNT(*)
-      INTO v_count
-      FROM CHUYEN_DANH_BAT
-     WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
-
-    IF v_count = 0 THEN
-        RAISE_APPLICATION_ERROR(
-            -20010,
-            'MA CHUYEN DANH BAT "' || p_MaChuyenDanhBat || '" KHONG TON TAI.'
-        );
-    END IF;
     OPEN p_cursor FOR
         SELECT lht.MaLogHaiTrinh, lht.ThoiGian, lht.ViTri, lht.VanToc, lht.HuongDiChuyen
         FROM LOG_HAI_TRINH lht
@@ -795,11 +885,8 @@ BEGIN
     INSERT INTO LOG_HAI_TRINH(MaChuyenDanhBat, ThoiGian, ViTri, VanToc, HuongDiChuyen)
     VALUES (p_MaChuyenDanhBat, p_ThoiGian, SDO_UTIL.FROM_WKTGEOMETRY(p_ViTri), p_VanToc, p_HuongDiChuyen);
 
-    COMMIT;
-
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -846,6 +933,10 @@ BEGIN
             mc.ThoiGianThaLuoi, 
             mc.ThoiGianKeoLuoi, 
             DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(mc.ViTriKeoLuoi), 4000, 1);
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -861,6 +952,10 @@ BEGIN
         FROM DANHBAT_THUYSAN dbts 
         JOIN ME_CA mc on dbts.MaMeCa = mc.MaMeCa
         WHERE dbts.MaThuySan = 1;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -875,11 +970,8 @@ BEGIN
     INSERT INTO VI_PHAM(MaChuyenDanhBat, ViTri, MoTa)
     VALUES (p_MaChuyenDanhBat, p_ViTri, p_MoTa);
 
-    COMMIT;
-
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -895,11 +987,8 @@ BEGIN
     SET MoTa = p_MoTa
     WHERE MaViPham =p_MaViPham;
 
-    COMMIT;
-
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -926,7 +1015,9 @@ BEGIN
     INSERT INTO NGU_TRUONG (TenNguTruong, ViTri, SoLuongTauToiDa)
         VALUES (p_TenNguTruong, v_ViTri, p_SoLuongTauToiDa);
 
-    COMMIT;
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -943,6 +1034,10 @@ IS
 BEGIN
     OPEN vi_pham_cursor FOR
         SELECT * FROM VI_PHAM;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -959,12 +1054,16 @@ BEGIN
         JOIN TAU_CA tc ON tc.MaTauCa = cdb.MaTauCa
         GROUP BY tc.MaTauCa
         ORDER BY SoLuongLoiViPham DESC;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
 -- THUY SAN
 -- THONG KE SAN LUONG THEO LOAI THUY SAN
-CREATE OR REPLACE PROCEDURE statistics_THUY_SAN_by_type(
+CREATE OR REPLACE PROCEDURE thong_ke_san_luong_thuy_san_theo_loai(
     thuy_san_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -974,12 +1073,16 @@ BEGIN
         FROM THUY_SAN ts
         JOIN DANHBAT_THUYSAN dbts ON dbts.MaThuySan = ts.MaThuySan
         GROUP BY ts.MaThuySan, ts.TenLoaiThuySan;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
 -- BAO
 -- THONG KE SO LUONG BAO THEO NAM
-CREATE OR REPLACE PROCEDURE statistics_BAO_by_year(
+CREATE OR REPLACE PROCEDURE thong_ke_so_bao_theo_nam(
     bao_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -991,6 +1094,10 @@ BEGIN
         JOIN LOG_DUONG_DI_BAO lddb ON lddb.MaBao = b.MaBao
         GROUP BY EXTRACT(YEAR FROM lddb.ThoiGian)
         ORDER BY Nam;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -1005,11 +1112,8 @@ BEGIN
     INSERT INTO THOI_TIET(KhuVucAnhHuong, ChiTietDuBao)
     VALUES (p_KhuVucAnhHuong, p_ChiTietDuBao);
 
-    COMMIT;
-
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -1023,11 +1127,8 @@ BEGIN
     INSERT INTO BAO(TENBAO)
     VALUES (p_TenBao);
 
-    COMMIT;
-
     EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -1062,18 +1163,16 @@ BEGIN
         p_MucDo
     );
 
-    COMMIT;
-
-EXCEPTION
+    EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
+-- can sua o tren
 
 -- VI. CREATE FUNCTION
 --  Kiem tra dang nhap
- CREATE OR REPLACE FUNCTION Fn_dang_nhap (
+CREATE OR REPLACE FUNCTION Fn_dang_nhap(
     p_username      APP_USER.USERNAME%TYPE,
     p_password      APP_USER.PASSWORD%TYPE
 ) RETURN NVARCHAR2
@@ -1083,8 +1182,7 @@ BEGIN
     SELECT USER_ID
     INTO f_user_id
     FROM APP_USER
-    WHERE USERNAME = p_username
-      AND PASSWORD = p_password;
+    WHERE USERNAME = p_username AND PASSWORD = p_password;
 
     RETURN USER_ID;
 
