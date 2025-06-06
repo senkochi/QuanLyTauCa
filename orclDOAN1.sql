@@ -7,8 +7,6 @@ DECLARE
     v_poly SDO_GEOMETRY;
     v_Count NUMBER;
 BEGIN
-    v_Count := 0;
-
     SELECT nt.ViTri
     INTO v_poly
     FROM CHUYEN_DANH_BAT cdb
@@ -23,8 +21,14 @@ BEGIN
     IF SDO_CONTAINS(v_poly, :NEW.ViTri) = 'FALSE' AND v_Count = 0 THEN
         insert_VI_PHAM(:NEW.MaChuyenDanhBat, :NEW.ViTri, 'Vi pham vung bien');
     END IF;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in TRG_check_VI_PHAM: ' || SQLERRM);
 END;
 /
+--checked
 
 -- CAP NHAT SAN LUONG CHUYEN DANH BAT
 CREATE OR REPLACE TRIGGER TRG_update_weight
@@ -39,12 +43,13 @@ BEGIN
     SET TongKhoiLuong = TongKhoiLuong + :NEW.KhoiLuong
     WHERE MaChuyenDanhBat = :NEW.MaChuyenDanhBat;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
     RAISE_APPLICATION_ERROR(-20010,
             'Error in TRG_update_weight: ' || SQLERRM);
 END;
 /
+--checked
 
 -- V. CREATE PROCEDURE
 
@@ -1165,7 +1170,7 @@ END;
 
 -- THUY SAN
 -- THONG KE SAN LUONG THEO LOAI THUY SAN
-CREATE OR REPLACE PROCEDURE thong_ke_san_luong_thuy_san_theo_loai(
+CREATE OR REPLACE PROCEDURE statistics_seafood_output_by_species(
     thuy_san_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -1176,15 +1181,17 @@ BEGIN
         JOIN DANHBAT_THUYSAN dbts ON dbts.MaThuySan = ts.MaThuySan
         GROUP BY ts.MaThuySan, ts.TenLoaiThuySan;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in statistics_seafood_output_by_species: ' || SQLERRM);
 END;
 /
+--checked
 
 -- BAO
 -- THONG KE SO LUONG BAO THEO NAM
-CREATE OR REPLACE PROCEDURE thong_ke_so_bao_theo_nam(
+CREATE OR REPLACE PROCEDURE statistics_storm_count_by_year(
     bao_cursor OUT SYS_REFCURSOR
 )
 IS
@@ -1197,28 +1204,33 @@ BEGIN
         GROUP BY EXTRACT(YEAR FROM lddb.ThoiGian)
         ORDER BY Nam;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in statistics_storm_count_by_year: ' || SQLERRM);
 END;
 /
+--checked
 
 --5. KHI TUONG THUY VAN
 -- insert THOI_TIET
 CREATE OR REPLACE PROCEDURE insert_THOI_TIET(
-    p_KhuVucAnhHuong  THOI_TIET.KhuVucAnhHuong%TYPE,
-    p_ChiTietDuBao    THOI_TIET.ChiTietDuBao%TYPE
+    p_ThoiGianDuBao     THOI_TIET.ThoiGianDuBao%TYPE,
+    p_KhuVucAnhHuong    THOI_TIET.KhuVucAnhHuong%TYPE,
+    p_ChiTietDuBao      THOI_TIET.ChiTietDuBao%TYPE
 )
 IS
 BEGIN
-    INSERT INTO THOI_TIET(KhuVucAnhHuong, ChiTietDuBao)
-    VALUES (p_KhuVucAnhHuong, p_ChiTietDuBao);
+    INSERT INTO THOI_TIET(ThoiGianDuBao, KhuVucAnhHuong, ChiTietDuBao)
+    VALUES (p_ThoiGianDuBao, p_KhuVucAnhHuong, p_ChiTietDuBao);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_THOI_TIET: ' || SQLERRM);
 END;
 /
+--checked
 
 -- insert BAO
 CREATE OR REPLACE PROCEDURE insert_BAO(
@@ -1229,11 +1241,13 @@ BEGIN
     INSERT INTO BAO(TENBAO)
     VALUES (p_TenBao);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_BAO: ' || SQLERRM);
 END;
 /
+--checked
 
 -- insert LOG_DUONG_DI_BAO
 CREATE OR REPLACE PROCEDURE insert_LOG_DUONG_DI_BAO(
@@ -1247,30 +1261,22 @@ IS
 BEGIN
     BEGIN
         v_ViTri := SDO_UTIL.FROM_WKTGEOMETRY(p_ViTriWKT, 4326);
-    EXCEPTION
-        WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20001, 'WKT không hợp lệ: '||SQLERRM);
+
+        EXCEPTION
+            WHEN OTHERS THEN
+                RAISE_APPLICATION_ERROR(-20001, 'Error in insert_LOG_DUONG_DI_BAO:  WKT không hợp lệ, '||SQLERRM);
     END;
     
-    INSERT INTO LOG_DUONG_DI_BAO(
-        MaBao,
-        ThoiGian,
-        ViTri,
-        MucDo
-    )
-    VALUES (
-        p_MaBao,
-        p_ThoiGian,
-        v_ViTri,
-        p_MucDo
-    );
+    INSERT INTO LOG_DUONG_DI_BAO(MaBao, ThoiGian, ViTri, MucDo)
+        VALUES (p_MaBao, p_ThoiGian, v_ViTri, p_MucDo);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_LOG_DUONG_DI_BAO: ' || SQLERRM);
 END;
 /
--- can sua o tren
+--checked
 
 -- VI. CREATE FUNCTION
 --  Kiem tra dang nhap
@@ -1288,11 +1294,16 @@ BEGIN
 
     RETURN USER_ID;
 
-    EXCEPTION
+EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RETURN NULL;
+
+    WHEN OTHERS THEN    
+        RAISE_APPLICATION_ERROR(-20010,
+                'Error in Fn_dang_nhap: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Kiem tra so luong tau hien tai
 CREATE OR REPLACE FUNCTION Fn_kiem_tra_so_luong_tau (
@@ -1309,25 +1320,12 @@ BEGIN
 
     RETURN f_HienTai < f_ToiDa;
 EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RETURN FALSE; 
+    WHEN OTHERS THEN    
+        RAISE_APPLICATION_ERROR(-20010,
+                'Error in Fn_kiem_tra_so_luong_tau: ' || SQLERRM);
 END;
 /
-
--- Kiem tra user co phai admin khong
-CREATE OR REPLACE FUNCTION Fn_la_admin (
-    p_user_id NVARCHAR2
-) RETURN BOOLEAN
-IS
-    f_count INTEGER;
-BEGIN
-    SELECT COUNT(*) INTO f_count
-    FROM ADMIN
-    WHERE MaAdmin = p_user_id;
-
-    RETURN f_count > 0;
-END;
-/
+--checked
 
 -- VII. TEST CASE
 
