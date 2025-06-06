@@ -24,7 +24,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20001,
             'Error in TRG_check_VI_PHAM: ' || SQLERRM);
 END;
 /
@@ -45,7 +45,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20002,
             'Error in TRG_update_weight: ' || SQLERRM);
 END;
 /
@@ -66,7 +66,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20003,
             'Error in get_ships_list: ' || SQLERRM);
 END;
 /
@@ -86,7 +86,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20004,
             'Error in get_owner_ships_list: ' || SQLERRM);
 END;
 /
@@ -105,7 +105,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20005,
             'Error in get_owners_pending_list: ' || SQLERRM);
 END;
 /
@@ -124,7 +124,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20006,
             'Error in get_ships_pending_list: ' || SQLERRM);
 END;
 /
@@ -144,7 +144,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20007,
             'Error in get_owner_info: ' || SQLERRM);
 END;
 /
@@ -164,7 +164,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20008,
             'Error in get_ship_info: ' || SQLERRM);
 END;
 /
@@ -184,7 +184,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20009,
             'Error in get_owner_ships_list_and_working_status: ' || SQLERRM);
 END;
 /
@@ -223,7 +223,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20011,
             'Error in get_voyages_pending_list: ' || SQLERRM);
 END;
 /
@@ -243,7 +243,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20012,
             'Error in get_ship_voyages_list: ' || SQLERRM);
 END;
 /
@@ -260,7 +260,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20013,
             'Error in get_working_ships_list: ' || SQLERRM);
 END;
 /
@@ -278,7 +278,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20014,
             'Error in get_fishery_list: ' || SQLERRM);
 END;
 /
@@ -301,7 +301,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20015,
             'Error in get_newest_weather_info: ' || SQLERRM);
 END;
 /
@@ -319,7 +319,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20016,
             'Error in get_storm_list: ' || SQLERRM);
 END;
 /
@@ -341,7 +341,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20017,
             'Error in get_storm_info: ' || SQLERRM);
 END;
 /
@@ -371,7 +371,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20018,
             'Error in insert_ADMIN: ' || SQLERRM);
 END;
 /
@@ -405,7 +405,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20019,
             'Error in insert_CHU_TAU: ' || SQLERRM);
 END;
 /
@@ -423,7 +423,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20020,
             'Error in insert_NGHE: ' || SQLERRM);
 END;
 
@@ -448,12 +448,12 @@ BEGIN
         INSERT INTO TAU_CA(SoDangKy, ChieuDai, CongSuat, NamDongTau, MaChuTau, MaNgheChinh)
         VALUES (p_SoDangKy, p_ChieuDai, p_CongSuat, p_NamDongTau, p_MaChuTau, p_MaNgheChinh);
     ELSE
-        RAISE_APPLICATION_ERROR(-20010, 'Error in insert_TAU_CA: HO SO CHU TAU CHUA DUOC DUYET');
+        RAISE_APPLICATION_ERROR(-20021, 'Error in insert_TAU_CA: HO SO CHU TAU CHUA DUOC DUYET');
     END IF;
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20022,
             'Error in insert_TAU_CA: ' || SQLERRM);
 END;
 /
@@ -472,7 +472,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20023,
             'Error in insert_TAU_NGHE: ' || SQLERRM);
 END;
 /
@@ -492,7 +492,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20024,
             'Error in update_approval_status_CHU_TAU: ' || SQLERRM);
 END;
 /
@@ -512,7 +512,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20025,
             'Error in update_approval_status_TAU_CA: ' || SQLERRM);
 END;
 /
@@ -539,7 +539,7 @@ BEGIN
     
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20026,
             'Error in update_info_CHU_TAU: ' || SQLERRM);
 END;
 /
@@ -568,7 +568,7 @@ BEGIN
     
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20027,
             'Error in update_info_TAU_CA: ' || SQLERRM);
 END;
 /
@@ -589,7 +589,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20028,
             'Error in get_approval_status_CHU_TAU: ' || SQLERRM);
 END;
 /
@@ -610,7 +610,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20029,
             'Error in get_approval_status_TAU_CA: ' || SQLERRM);
 END;
 /
@@ -669,16 +669,16 @@ BEGIN
         WHERE MaTauCa = p_MaTauCa;
 
     ELSIF p_TrangThaiHoatDongTauCa != 'DANG CHO|CHUA DK' THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Error in insert_CHUYEN_DANH_BAT: TAU DA DUOC DANG KY');
+        RAISE_APPLICATION_ERROR(-20030, 'Error in insert_CHUYEN_DANH_BAT: TAU DA DUOC DANG KY');
     ELSIF p_KtraSoLuongTau = FALSE THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Error in insert_CHUYEN_DANH_BAT: SO LUONG TAU O NGU TRUONG DAT TOI DA');
+        RAISE_APPLICATION_ERROR(-20031, 'Error in insert_CHUYEN_DANH_BAT: SO LUONG TAU O NGU TRUONG DAT TOI DA');
     ELSE
-        RAISE_APPLICATION_ERROR(-20003, 'Error in insert_CHUYEN_DANH_BAT: HO SO CHU TAU HOAC HO SO TAU CA CHUA DUOC DUYET');
+        RAISE_APPLICATION_ERROR(-20032, 'Error in insert_CHUYEN_DANH_BAT: HO SO CHU TAU HOAC HO SO TAU CA CHUA DUOC DUYET');
     END IF;
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20033,
             'Error in insert_CHUYEN_DANH_BAT: ' || SQLERRM);
 END;
 /
@@ -715,7 +715,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20034,
             'Error in update_approval_status_CHUYEN_DANH_BAT: ' || SQLERRM);
 END;
 /
@@ -746,7 +746,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20035,
             'Error in get_newest_location_info_all: ' || SQLERRM);
 END;
 /
@@ -779,7 +779,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20036,
             'Error in get_newest_location_info_owner: ' || SQLERRM);
 END;
 /
@@ -802,9 +802,9 @@ BEGIN
     WHERE MaTauCa = p_MaTauCa;
 
     IF p_TrangThaiHoatDongTauCa = 'DANG CHO|CHUA DK' THEN
-        RAISE_APPLICATION_ERROR(-20004, 'Error in update_working_status_depart: TAU CHUA DANG KY CHUYEN DANH BAT');
+        RAISE_APPLICATION_ERROR(-20037, 'Error in update_working_status_depart: TAU CHUA DANG KY CHUYEN DANH BAT');
     ELSIF p_TrangThaiHoatDongTauCa = 'DANG HOAT DONG' THEN
-        RAISE_APPLICATION_ERROR(-20005, 'Error in update_working_status_depart: TAU DANG HOAT DONG, KHONG THE DUNG CHUC NANG NAY');
+        RAISE_APPLICATION_ERROR(-20038, 'Error in update_working_status_depart: TAU DANG HOAT DONG, KHONG THE DUNG CHUC NANG NAY');
     END IF;
 
     SELECT MaChuyenDanhBat
@@ -818,9 +818,9 @@ BEGIN
     WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
 
     IF p_TrangThaiDuyetCDB = 'CHO DUYET' THEN
-        RAISE_APPLICATION_ERROR(-20006, 'Error in update_working_status_depart: CHUYEN DANH BAT CHUA DUOC DUYET');
+        RAISE_APPLICATION_ERROR(-20039, 'Error in update_working_status_depart: CHUYEN DANH BAT CHUA DUOC DUYET');
     ELSIF p_TrangThaiDuyetCDB = 'TU CHOI' THEN
-        RAISE_APPLICATION_ERROR(-20007, 'Error in update_working_status_depart: CHUYEN DANH BAT BI TU CHOI');
+        RAISE_APPLICATION_ERROR(-20040, 'Error in update_working_status_depart: CHUYEN DANH BAT BI TU CHOI');
     END IF;
 
     UPDATE TAU_CA
@@ -835,7 +835,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20041,
             'Error in update_working_status_depart: ' || SQLERRM);
 END;
 /
@@ -877,12 +877,12 @@ BEGIN
         SET SoLuongTauHienTai = SoLuongTauHienTai - 1
         WHERE MaNguTruong = p_MaNguTruong;
     ELSE 
-        RAISE_APPLICATION_ERROR(-20008, 'Error in update_working_status_dock: TAU HIEN TAI KHONG HOAT DONG');
+        RAISE_APPLICATION_ERROR(-20042, 'Error in update_working_status_dock: TAU HIEN TAI KHONG HOAT DONG');
     END IF;
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20043,
             'Error in update_working_status_dock: ' || SQLERRM);
 END;
 /
@@ -904,7 +904,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20044,
             'Error in insert_ME_CA: ' || SQLERRM);
 END;
 /
@@ -924,7 +924,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20045,
             'Error in insert_DANHBAT_THUYSAN: ' || SQLERRM);
 END;
 /
@@ -945,7 +945,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20046,
             'Error in get_log_list_CHUYEN_DANH_BAT: ' || SQLERRM);
 END;
 /
@@ -968,7 +968,7 @@ BEGIN
     WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
 
     IF v_exists = 0 THEN
-        RAISE_APPLICATION_ERROR(-20010, 
+        RAISE_APPLICATION_ERROR(-20047, 
             'insert_LOG_HAI_TRINH_for_CHUYEN_DANH_BAT: Chuyen danh bat khong ton tai.'
         );
     END IF;
@@ -978,7 +978,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20048,
             'Error in insert_LOG_HAI_TRINH_for_CHUYEN_DANH_BAT: ' || SQLERRM);
 END;
 /
@@ -1029,7 +1029,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20049,
             'Error in get_fishing_diary: ' || SQLERRM);
 END;
 /
@@ -1048,7 +1048,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20050,
             'Error in insert_VI_PHAM: ' || SQLERRM);
 END;
 /
@@ -1067,7 +1067,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20051,
             'Error in update_description_VI_PHAM: ' || SQLERRM);
 END;
 /
@@ -1089,7 +1089,7 @@ BEGIN
         v_ViTri := SDO_UTIL.FROM_WKTGEOMETRY(DBMS_LOB.SUBSTR(p_ViTri, 32767, 1), 4326);
     EXCEPTION
         WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20001, 'Error in insert_NGU_TRUONG: WKT không hợp lệ, ' || SQLERRM);
+            RAISE_APPLICATION_ERROR(-20052, 'Error in insert_NGU_TRUONG: WKT không hợp lệ, ' || SQLERRM);
     END;
 
     INSERT INTO NGU_TRUONG (TenNguTruong, ViTri, SoLuongTauToiDa)
@@ -1097,7 +1097,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20053,
             'Error in insert_NGU_TRUONG: ' || SQLERRM);
 END;
 /
@@ -1119,7 +1119,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20054,
             'Error in get_fishery_info: ' || SQLERRM);
 END;
 /
@@ -1140,7 +1140,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20055,
             'Error in get_list_VI_PHAM: ' || SQLERRM);
 END;
 /
@@ -1162,7 +1162,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20056,
             'Error in statistics_VI_PHAM_by_TAU_CA: ' || SQLERRM);
 END;
 /
@@ -1183,7 +1183,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20057,
             'Error in statistics_seafood_output_by_species: ' || SQLERRM);
 END;
 /
@@ -1206,7 +1206,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20058,
             'Error in statistics_storm_count_by_year: ' || SQLERRM);
 END;
 /
@@ -1226,7 +1226,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20059,
             'Error in insert_THOI_TIET: ' || SQLERRM);
 END;
 /
@@ -1243,7 +1243,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20060,
             'Error in insert_BAO: ' || SQLERRM);
 END;
 /
@@ -1264,7 +1264,7 @@ BEGIN
 
         EXCEPTION
             WHEN OTHERS THEN
-                RAISE_APPLICATION_ERROR(-20001, 'Error in insert_LOG_DUONG_DI_BAO:  WKT không hợp lệ, '||SQLERRM);
+                RAISE_APPLICATION_ERROR(-20061, 'Error in insert_LOG_DUONG_DI_BAO:  WKT không hợp lệ, '||SQLERRM);
     END;
     
     INSERT INTO LOG_DUONG_DI_BAO(MaBao, ThoiGian, ViTri, MucDo)
@@ -1272,7 +1272,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20010,
+    RAISE_APPLICATION_ERROR(-20062,
             'Error in insert_LOG_DUONG_DI_BAO: ' || SQLERRM);
 END;
 /
@@ -1299,7 +1299,7 @@ EXCEPTION
         RETURN NULL;
 
     WHEN OTHERS THEN    
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20063,
                 'Error in Fn_dang_nhap: ' || SQLERRM);
 END;
 /
@@ -1321,7 +1321,7 @@ BEGIN
     RETURN f_HienTai < f_ToiDa;
 EXCEPTION
     WHEN OTHERS THEN    
-        RAISE_APPLICATION_ERROR(-20010,
+        RAISE_APPLICATION_ERROR(-20064,
                 'Error in Fn_kiem_tra_so_luong_tau: ' || SQLERRM);
 END;
 /

@@ -28,7 +28,7 @@ CREATE TABLE CHU_TAU (
 -- 4. Bang TAU_CA
 CREATE TABLE TAU_CA (
     MaTauCa            NVARCHAR2(20) PRIMARY KEY,
-    SoDangKy           NVARCHAR2(50) UNIQUE,
+    SoDangKy           NVARCHAR2(50) NOT NULL UNIQUE,
     ChieuDai           NUMBER(10,2),
     CongSuat           NUMBER(10,2),
     NamDongTau         INTEGER,
@@ -116,7 +116,7 @@ CREATE TABLE THUY_SAN (
 -- 13. Bang NGU_TRUONG
 CREATE TABLE NGU_TRUONG (
     MaNguTruong         NVARCHAR2(20) PRIMARY KEY,
-    TenNguTruong        NVARCHAR2(100) UNIQUE,
+    TenNguTruong        NVARCHAR2(100) NOT NULL UNIQUE,
     ViTri               SDO_GEOMETRY NOT NULL,
     SoLuongTauHienTai   INTEGER DEFAULT 0,
     SoLuongTauToiDa     INTEGER NOT NULL
@@ -142,7 +142,7 @@ CREATE TABLE LOG_DUONG_DI_BAO (
     MaBao           NVARCHAR2(20),
     ThoiGian        DATE            NOT NULL,
     ViTri           SDO_GEOMETRY    NOT NULL,
-    MucDo           NUMBER(20),
+    MucDo           NUMBER(20)      NOT NULL,
     PRIMARY KEY (MaLogDuongDi, MaBao)
 );
 
@@ -311,7 +311,7 @@ BEGIN
     
 END BEFORE EACH ROW;
 
-END TRG_CREATE_SEQ_LOG_HAI_TRINH;
+END;
 /
 
 -- 11. FOR LOG_DUONG_DI_BAO
@@ -343,7 +343,7 @@ BEGIN
     
 END BEFORE EACH ROW;
 
-END TRG_CREATE_SEQ_LOG_DUONG_DI_BAO;
+END;
 /
 
 -- 12. FOR ME_CA
@@ -374,8 +374,7 @@ BEGIN
     :NEW.MaMeCa := max_stt;
 
 END BEFORE EACH ROW;
-
-END TRG_CREATE_SEQ_ME_CA;
+END;
 /
 
 -- III. CREATE CONSTRAINT
