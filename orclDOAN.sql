@@ -29,7 +29,6 @@ CREATE TABLE CHU_TAU (
 CREATE TABLE TAU_CA (
     MaTauCa            NVARCHAR2(20) PRIMARY KEY,
     SoDangKy           NVARCHAR2(50) UNIQUE,
-    LoaiTau            NVARCHAR2(50),
     ChieuDai           NUMBER(10,2),
     CongSuat           NUMBER(10,2),
     NamDongTau         INTEGER,

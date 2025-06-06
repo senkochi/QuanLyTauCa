@@ -56,14 +56,16 @@ CREATE OR REPLACE PROCEDURE get_ships_list(
 IS
 BEGIN
     OPEN p_cursor FOR
-        SELECT *
+        SELECT MaTauCa, SoDangKy
         FROM TAU_CA;
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_ships_list: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay danh sach TAU_CA cua CHU_TAU
 CREATE OR REPLACE PROCEDURE get_owner_ships_list(
@@ -73,37 +75,55 @@ CREATE OR REPLACE PROCEDURE get_owner_ships_list(
 IS
 BEGIN
     OPEN p_cursor FOR
-        SELECT * FROM TAU_CA t WHERE t.MaChuTau = p_MaChuTau;
+        SELECT MaTauCa, SoDangKy
+        FROM TAU_CA t 
+        WHERE t.MaChuTau = p_MaChuTau;
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_owner_ships_list: ' || SQLERRM);
 END;
 /
+--checked
 
--- Lay danh sach CHU_TAU CHO DUYET
+-- Lay danh sach CHU_TAU cho duyet
 CREATE OR REPLACE PROCEDURE get_owners_pending_list(
     chu_tau_cursor OUT SYS_REFCURSOR
 )
 IS
 BEGIN
     OPEN chu_tau_cursor FOR
-        SELECT * FROM CHU_TAU ct
+        SELECT MaChuTau, HoTen, CCCD, TrangThaiDuyet
+        FROM CHU_TAU ct
         WHERE ct.TrangThaiDuyet = 'DANG CHO';
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_owners_pending_list: ' || SQLERRM);
 END;
 /
+--checked
 
--- Lay danh sach TAU_CA CHO DUYET
+-- Lay danh sach TAU_CA cho duyet
 CREATE OR REPLACE PROCEDURE get_ships_pending_list(
     p_cursor OUT SYS_REFCURSOR
-) 
+)
 IS 
 BEGIN
     OPEN p_cursor FOR
-        SELECT * FROM TAU_CA tc
+        SELECT MaTauCa, SoDangKy, TrangThaiDuyet
+        FROM TAU_CA tc
         WHERE tc.TrangThaiDuyet = 'DANG CHO';
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_ships_pending_list: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay thong tin chi tiet CHU_TAU
 CREATE OR REPLACE PROCEDURE get_owner_info(
@@ -113,41 +133,57 @@ CREATE OR REPLACE PROCEDURE get_owner_info(
 IS
 BEGIN
     OPEN chu_tau_cursor FOR
-        SELECT * FROM CHU_TAU ct
+        SELECT *
+        FROM CHU_TAU ct
         WHERE ct.MaChuTau = p_MaChuTau;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_owner_info: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay thong tin chi tiet TAU_CA
 CREATE OR REPLACE PROCEDURE get_ship_info(
     tau_ca_cursor OUT SYS_REFCURSOR,
-    p_MaTauCa      TAU_CA.MaChuTau%TYPE
+    p_MaTauCa      TAU_CA.MaTauCa%TYPE
 )
 IS
 BEGIN
     OPEN tau_ca_cursor FOR
-        SELECT * FROM TAU_CA tc
-        WHERE tc.MaChuTau = p_MaTauCa;
+        SELECT * 
+        FROM TAU_CA tc
+        WHERE tc.MaTauCa = p_MaTauCa;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_ship_info: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay danh sach TAU_CA va trang thai hoat dong TAU_CA cua CHU_TAU
 CREATE OR REPLACE PROCEDURE get_owner_ships_list_and_working_status(
     tau_ca_cursor OUT SYS_REFCURSOR,
-    p_MaChuTau        TAU_CA.p_MaChuTau%TYPE
+    p_MaChuTau        TAU_CA.MaChuTau%TYPE
 )
 IS
 BEGIN
     OPEN tau_ca_cursor FOR
-        SELECT tc.MaTauCa, tc.TrangThaiHoatDong 
+        SELECT tc.MaTauCa, tc.SoDangKy, tc.TrangThaiHoatDong 
         FROM TAU_CA tc 
         WHERE tc.MaChuTau = p_MaChuTau;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_owner_ships_list_and_working_status: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay thong tin CHUYEN_DANH_BAT
 CREATE OR REPLACE PROCEDURE get_voyages_info(
@@ -161,11 +197,13 @@ BEGIN
         FROM CHUYEN_DANH_BAT cdb
         WHERE cdb.MaChuyenDanhBat = p_MaChuyenDanhBat;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_voyages_info: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay danh sach CHUYEN_DANH_BAT cho duyet
 CREATE OR REPLACE PROCEDURE get_voyages_pending_list(
@@ -174,16 +212,17 @@ CREATE OR REPLACE PROCEDURE get_voyages_pending_list(
 IS
 BEGIN
     OPEN cdb_cursor FOR
-        SELECT tc.MaTauCa, cdb.MaChuyenDanhBat, cdb.TrangThaiDuyet
+        SELECT cdb.MaTauCa, cdb.MaChuyenDanhBat, cdb.TrangThaiDuyet
         FROM CHUYEN_DANH_BAT cdb
-        JOIN TAU_CA tc ON tc.MaTauCa = cdb.MaTauCa
-        WHERE cdb.TrangThaiDuyet = 'CHO DUYET';
+        WHERE cdb.TrangThaiDuyet = 'DANG CHO';
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_voyages_pending_list: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay danh sach CHUYEN_DANH_BAT cua TAU_CA
 CREATE OR REPLACE PROCEDURE get_ship_voyages_list(
@@ -193,16 +232,17 @@ CREATE OR REPLACE PROCEDURE get_ship_voyages_list(
 IS
 BEGIN
     OPEN cdb_cursor FOR
-        SELECT tc.MaTauCa, tc.TrangThaiHoatDong 
+        SELECT cdb.MaChuyenDanhBat, cdb.TrangThaiHoatDong 
         FROM CHUYEN_DANH_BAT cdb
-        JOIN TAU_CA tc ON tc.MaTauCa = cdb.MaTauCa
-        WHERE cdb.TrangThaiDuyet = 'CHO DUYET';
+        WHERE cdb.MaTauCa = p_MaTauCa;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_ship_voyages_list: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay danh sach tat ca TAU_CA DANG HOAT DONG
 CREATE OR REPLACE PROCEDURE get_working_ships_list(
@@ -215,9 +255,11 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_working_ships_list: ' || SQLERRM);
 END;
 /
+--xem lai
 
 -- Lay danh sach cac NGU_TRUONG
 CREATE OR REPLACE PROCEDURE get_fishery_list(
@@ -226,38 +268,16 @@ CREATE OR REPLACE PROCEDURE get_fishery_list(
 IS
 BEGIN
     OPEN ngu_truong_cursor FOR
-        SELECT ng.MANGUTRUONG,ng.TENNGUTRUONG FROM NGU_TRUONG ng;
+        SELECT ng.MaNguTruong, ng.TenNguTruong 
+        FROM NGU_TRUONG ng;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_fishery_list: ' || SQLERRM);
 END;
 /
-
--- Lay thong tin NGU_TRUONG
-CREATE OR REPLACE PROCEDURE get_fishery_info(
-    ngu_truong_cursor OUT SYS_REFCURSOR,
-    p_MaNguTruong NVARCHAR2
-)
-IS
-    v_Count NUMBER;
-BEGIN
-    -- Kiem tra ma ngu truong co ton tai khong
-    -- Neu khong ton tai, thi bao loi
-    SELECT COUNT(*)
-    INTO v_Count
-    FROM NGU_TRUONG ng
-    WHERE ng.MANGUTRUONG = p_MaNguTruong;
-
-    IF v_Count = 0 THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Ngu truong khong ton tai');
-    END IF; 
-
-
-    OPEN ngu_truong_cursor FOR
-        SELECT * 
-        FROM NGU_TRUONG ng 
-        WHERE ng.MANGUTRUONG = p_MaNguTruong; 
-    
-
-END;
-/
+--checked
 
 -- Lay thong tin THOI_TIET moi nhat
 CREATE OR REPLACE PROCEDURE get_newest_weather_info(
@@ -273,8 +293,14 @@ BEGIN
             ORDER BY ThoiGianDuBao DESC
         )
         WHERE ROWNUM = 1;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_newest_weather_info: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay danh sach BAO
 CREATE OR REPLACE PROCEDURE get_storm_list(
@@ -283,20 +309,35 @@ CREATE OR REPLACE PROCEDURE get_storm_list(
 IS
 BEGIN
     OPEN bao_cursor FOR
-        SELECT * FROM BAO;
+        SELECT *
+        FROM BAO b;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_storm_list: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Lay thong tin chi tiet BAO
 CREATE OR REPLACE PROCEDURE get_storm_info(
     bao_cursor OUT SYS_REFCURSOR,
-    p_MaBao NVARCHAR2
+    p_MaBao        LOG_DUONG_DI_BAOAO.MaBao%TYPE
 )
 IS
 BEGIN
     OPEN bao_cursor FOR
-        SELECT * FROM LOG_DUONG_DI_BAO b
-        WHERE b.MABAO = p_MaBao;
+        SELECT lddb.MaLogDuongDi, lddb.ThoiGian, DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(lddb.ViTri), 4000, 1) as ViTriWKT, lddb.MucDo
+        FROM LOG_DUONG_DI_BAO lddb
+        JOIN BAO b ON b.MaBao = lddb.MaBao
+        WHERE b.MABAO = p_MaBao
+        ORDER BY MaLogDuongDi ASC;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_storm_info: ' || SQLERRM);
 END;
 /
 
@@ -323,11 +364,13 @@ BEGIN
     INSERT INTO ADMIN(MaAdmin, HoTen, CoQuan, CCCD)
     VALUES(p_MaAdmin, p_HoTen, p_CoQuan, p_CCCD);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_ADMIN: ' || SQLERRM);
 END;
 /
+--checked
 
 --1. THONG TIN DANG KY 
 
@@ -355,12 +398,13 @@ BEGIN
     INSERT INTO CHU_TAU(MaChuTau, HoTen, SDT, DiaChi, CCCD)
     VALUES(p_MaChuTau, p_HoTen, p_SDT, NULLIF(TRIM(p_DiaChi), ''), p_CCCD);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
         RAISE_APPLICATION_ERROR(-20010,
             'Error in insert_CHU_TAU: ' || SQLERRM);
 END;
 /
+--checked
 
 -- DANG KY THONG TIN TAU_CA
 -- Insert NGHE
@@ -372,15 +416,15 @@ BEGIN
     INSERT INTO NGHE(TenNghe)
     VALUES (p_TenNghe);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_NGHE: ' || SQLERRM);
 END;
 
 -- Insert TAU_CA
 CREATE OR REPLACE PROCEDURE insert_TAU_CA(
     p_SoDangKy           TAU_CA.SoDangKy%TYPE,
-    p_LoaiTau            TAU_CA.LoaiTau%TYPE,
     p_ChieuDai           TAU_CA.ChieuDai%TYPE,
     p_CongSuat           TAU_CA.CongSuat%TYPE,
     p_NamDongTau         TAU_CA.NamDongTau%TYPE,
@@ -396,17 +440,19 @@ BEGIN
     WHERE MaChuTau = p_MaChuTau;
 
     IF p_TrangThaiDuyetChuTau = 'DA DUYET' THEN
-        INSERT INTO TAU_CA(SoDangKy, LoaiTau, ChieuDai, CongSuat, NamDongTau, MaChuTau, MaNgheChinh)
-        VALUES (p_SoDangKy, p_LoaiTau, p_ChieuDai, p_CongSuat, p_NamDongTau, p_MaChuTau, p_MaNgheChinh);
+        INSERT INTO TAU_CA(SoDangKy, ChieuDai, CongSuat, NamDongTau, MaChuTau, MaNgheChinh)
+        VALUES (p_SoDangKy, p_ChieuDai, p_CongSuat, p_NamDongTau, p_MaChuTau, p_MaNgheChinh);
     ELSE
-        RAISE_APPLICATION_ERROR(-number, 'HO SO CHU TAU CHUA DUOC DUYET');
+        RAISE_APPLICATION_ERROR(-20010, 'Error in insert_TAU_CA: HO SO CHU TAU CHUA DUOC DUYET');
     END IF;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_TAU_CA: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Insert NGHE cho TAU_CA
 CREATE OR REPLACE PROCEDURE insert_TAU_NGHE(
@@ -419,14 +465,15 @@ BEGIN
     INSERT INTO TAU_NGHE(MaTauCa, MaNghe, VungHoatDong)
     VALUES (p_MaTauCa, p_MaNghe, p_VungHoatDong);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_TAU_NGHE: ' || SQLERRM);
 END;
 /
+--checked
 
 -- DUYET THONG TIN CHU_TAU
--- Xem PROCEDURE LAY DU LIEU
 -- Cap nhat trang thai duyet CHU_TAU
 CREATE OR REPLACE PROCEDURE update_approval_status_CHU_TAU(
     p_TrangThaiDuyet    CHU_TAU.TrangThaiDuyet%TYPE,
@@ -438,14 +485,15 @@ BEGIN
     SET TrangThaiDuyet = p_TrangThaiDuyet
     WHERE MaChuTau = p_MaChuTau;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in update_approval_status_CHU_TAU: ' || SQLERRM);
 END;
 /
+--checked
 
 -- DUYET THONG TIN TAU_CA
--- Xem PROCEDURE LAY DU LIEU
 -- Cap nhat trang thai duyet TAU_CA
 CREATE OR REPLACE PROCEDURE update_approval_status_TAU_CA(
     p_TrangThaiDuyet    TAU_CA.TrangThaiDuyet%TYPE,
@@ -457,11 +505,13 @@ BEGIN
     SET TrangThaiDuyet = p_TrangThaiDuyet
     WHERE MaTauCa = p_MaTauCa;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in update_approval_status_TAU_CA: ' || SQLERRM);
 END;
 /
+--checked
 
 -- CAP NHAT THONG TIN CHU_TAU
 -- Update CHU_TAU
@@ -482,18 +532,19 @@ BEGIN
         TrangThaiDuyet = 'DANG CHO'
     WHERE MaChuTau = p_MaChuTau;
     
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in update_info_CHU_TAU: ' || SQLERRM);
 END;
 /
+--checked
 
 -- CAP NHAT THONG TIN TAU_CA
 -- Update TAU_CA
 CREATE OR REPLACE PROCEDURE update_info_TAU_CA(
     p_MaTauCa            TAU_CA.MaTauCa%TYPE,
     p_SoDangKy           TAU_CA.SoDangKy%TYPE,
-    p_LoaiTau            TAU_CA.LoaiTau%TYPE,
     p_ChieuDai           TAU_CA.ChieuDai%TYPE,
     p_CongSuat           TAU_CA.CongSuat%TYPE,
     p_NamDongTau         TAU_CA.NamDongTau%TYPE,
@@ -503,7 +554,6 @@ IS
 BEGIN
     UPDATE TAU_CA
     SET SoDangKy = p_SoDangKy,
-        LoaiTau = p_LoaiTau,
         ChieuDai = p_ChieuDai,
         CongSuat = p_CongSuat,
         NamDongTau = p_NamDongTau,
@@ -511,17 +561,19 @@ BEGIN
         MaNgheChinh = p_MaNgheChinh
     WHERE MaTauCa = p_MaTauCa;
     
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in update_info_TAU_CA: ' || SQLERRM);
 END;
 /
+--checked
 
 -- THEO DOI TRANG THAI DUYET CHU_TAU
 -- Lay trang thai duyet CHU_TAU
 CREATE OR REPLACE PROCEDURE get_approval_status_CHU_TAU(
-     chu_tau_cursor OUT SYS_REFCURSOR,
-     p_MaChuTau         CHU_TAU.MaChuTau%TYPE
+    chu_tau_cursor OUT SYS_REFCURSOR,
+    p_MaChuTau         CHU_TAU.MaChuTau%TYPE
 )
 IS
 BEGIN
@@ -530,14 +582,16 @@ BEGIN
         FROM CHU_TAU ct
         WHERE ct.MaChuTau = p_MaChuTau;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_approval_status_CHU_TAU: ' || SQLERRM);
 END;
 /
+--checked
 
 -- THEO DOI TRANG THAI DUYET TAU_CA
--- Lay danh sau TAU_CA va trang thai duyet TAU_CA
+-- Lay danh sau TAU_CA va trang thai duyet TAU_CA cua CHU_TAU
 CREATE OR REPLACE PROCEDURE get_approval_status_TAU_CA(
     tau_ca_cursor OUT SYS_REFCURSOR,
     p_MaChuTau        CHU_TAU.MaChuTau%TYPE
@@ -549,19 +603,25 @@ BEGIN
         FROM TAU_CA tc
         WHERE tc.MaChuTau = p_MaChuTau;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_approval_status_TAU_CA: ' || SQLERRM);
 END;
 /
+--checked
 
 -- 2.HOAT DONG DANH BAT BAT
 
 -- DANG KY THONG TIN CHUYEN DANH BAT
 -- Tao CHUYEN_DANH_BAT
 CREATE OR REPLACE PROCEDURE insert_CHUYEN_DANH_BAT(
-    p_MaTauCa             CHUYEN_DANH_BAT.MaTauCa%TYPE,
-    p_MaNguTruong         CHUYEN_DANH_BAT.MaNguTruong%TYPE
+    p_NgayXuatBen       CHUYEN_DANH_BAT.NgayXuatBen%TYPE,
+    p_NgayXuatBen       CHUYEN_DANH_BAT.NgayXuatBen%TYPE,
+    p_CangDi            CHUYEN_DANH_BAT.CangDi%TYPE,
+    p_CangVe            CHUYEN_DANH_BAT.CangVe%TYPE,
+    p_MaTauCa           CHUYEN_DANH_BAT.MaTauCa%TYPE,
+    p_MaNguTruong       CHUYEN_DANH_BAT.MaNguTruong%TYPE
 )
 IS
     p_TrangThaiDuyetChuTau          CHU_TAU.TrangThaiDuyet%TYPE;
@@ -571,17 +631,26 @@ IS
 BEGIN
     SELECT ct.TrangThaiDuyet, tc.TrangThaiDuyet, tc.TrangThaiHoatDong
     INTO p_TrangThaiDuyetChuTau, p_TrangThaiDuyetTauCa, p_TrangThaiHoatDongTauCa
-    FROM TAU_CA tc JOIN CHU_TAU ct ON tc.MaChuTau = ct.MACHUTAU
+    FROM TAU_CA tc 
+    JOIN CHU_TAU ct ON tc.MaChuTau = ct.MaChuTau
     WHERE tc.MaTauCa = p_MaTauCa;
 
     p_KtraSoLuongTau := Fn_kiem_tra_so_luong_tau(p_MaNguTruong);
 
     IF p_TrangThaiDuyetChuTau = 'DA DUYET' AND p_TrangThaiDuyetTauCa = 'DA DUYET' AND p_TrangThaiHoatDongTauCa = 'DANG CHO|CHUA DK' AND p_KtraSoLuongTau = TRUE THEN
         INSERT INTO CHUYEN_DANH_BAT(
+            NgayXuatBen,
+            NgayXuatBen,
+            CangDi,
+            CangVe,
             MaTauCa,
             MaNguTruong
         )
         VALUES(
+            p_NgayXuatBen,
+            p_NgayXuatBen,
+            p_CangDi,
+            p_CangVe,
             p_MaTauCa,
             p_MaNguTruong
         );
@@ -595,18 +664,20 @@ BEGIN
         WHERE MaTauCa = p_MaTauCa;
 
     ELSIF p_TrangThaiHoatDongTauCa != 'DANG CHO|CHUA DK' THEN
-        RAISE_APPLICATION_ERROR(-20001, 'TAU DA DUOC DANG KY');
+        RAISE_APPLICATION_ERROR(-20001, 'Error in insert_CHUYEN_DANH_BAT: TAU DA DUOC DANG KY');
     ELSIF p_KtraSoLuongTau = FALSE THEN
-        RAISE_APPLICATION_ERROR(-20002, 'SO LUONG TAU O NGU TRUONG DAT TOI DA');
+        RAISE_APPLICATION_ERROR(-20002, 'Error in insert_CHUYEN_DANH_BAT: SO LUONG TAU O NGU TRUONG DAT TOI DA');
     ELSE
-        RAISE_APPLICATION_ERROR(-20003, 'HO SO CHU TAU HOAC HO SO TAU CA CHUA DUOC DUYET');
+        RAISE_APPLICATION_ERROR(-20003, 'Error in insert_CHUYEN_DANH_BAT: HO SO CHU TAU HOAC HO SO TAU CA CHUA DUOC DUYET');
     END IF;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_CHUYEN_DANH_BAT: ' || SQLERRM);
 END;
 /
+--checked
 
 -- DUYET THONG TIN CHUYEN DANH BAT
 -- Cap nhat trang thai duyet CHUYEN_DANH_BAT
@@ -618,15 +689,11 @@ IS
     p_MaNguTruong    CHUYEN_DANH_BAT.MaNguTruong%TYPE;
     p_MaTauCa        CHUYEN_DANH_BAT.MaTauCa%TYPE;
 BEGIN
-    IF p_TrangThaiDuyet = 'DA DUYET' THEN
-        UPDATE CHUYEN_DANH_BAT
-        SET TrangThaiDuyet = p_TrangThaiDuyet
-        WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
-    ELSE
-        UPDATE CHUYEN_DANH_BAT
-        SET TrangThaiDuyet = p_trangthaiduyet
-        WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
+    UPDATE CHUYEN_DANH_BAT
+    SET TrangThaiDuyet = p_TrangThaiDuyet
+    WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
 
+    IF p_TrangThaiDuyet != 'DA DUYET' THEN
         SELECT MaTauCa, MaNguTruong
         INTO p_MaTauCa, p_MaNguTruong
         FROM CHUYEN_DANH_BAT
@@ -641,11 +708,13 @@ BEGIN
         WHERE MaNguTruong = p_MaNguTruong;
     END IF;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in update_approval_status_CHUYEN_DANH_BAT: ' || SQLERRM);
 END;
 /
+--checked
 
 -- GIAM SAT DANH BAT
 -- Lay thong tin vi tri moi nhat cua tat ca tau
@@ -654,27 +723,29 @@ CREATE OR REPLACE PROCEDURE get_newest_location_info_all(
 )
 IS
 BEGIN
-  OPEN p_cursor FOR
-    SELECT MaTauCa, ThoiGian, ViTriWKT, VanToc, HuongDiChuyen
-    FROM (
-        SELECT tc.MaTauCa, lht.ThoiGian,
-            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(lht.ViTri), 4000, 1) AS ViTriWKT,
-            lht.VanToc, lht.HuongDiChuyen,
-            ROW_NUMBER() OVER (
-            PARTITION BY tc.MaTauCa
-            ORDER BY lht.ThoiGian DESC
-            ) AS rn
-        FROM TAU_CA tc
-        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
-        JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
-    )
-    WHERE rn = 1;
+    OPEN p_cursor FOR
+        SELECT MaTauCa, ThoiGian, ViTriWKT, VanToc, HuongDiChuyen
+        FROM (
+            SELECT tc.MaTauCa, lht.ThoiGian,
+                DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(lht.ViTri), 4000, 1) AS ViTriWKT,
+                lht.VanToc, lht.HuongDiChuyen,
+                ROW_NUMBER() OVER (
+                PARTITION BY tc.MaTauCa
+                ORDER BY lht.ThoiGian DESC
+                ) AS rn
+            FROM TAU_CA tc
+            JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
+            JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
+        ) sub
+        WHERE sub.rn = 1;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_newest_location_info_all: ' || SQLERRM);
 END;
 /
+--checked
 
 -- GIAM SAT TAU_CA TRONG DOI TAU
 -- Lay thong tin vi tri moi nhat cua cac tau trong doi tau
@@ -698,14 +769,16 @@ BEGIN
         JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
         JOIN LOG_HAI_TRINH lht ON lht.MaChuyenDanhBat = cdb.MaChuyenDanhBat
         WHERE tc.MaChuTau = p_MaChuTau
-    )
-    WHERE rn = 1;
+    ) sub
+    WHERE sub.rn = 1;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_newest_location_info_owner: ' || SQLERRM);
 END;
 /
+--checked
 
 -- CAP NHAT TRANG THAI ROI / CAP CANG
 -- Cap nhat trang thai roi cang
@@ -724,9 +797,9 @@ BEGIN
     WHERE MaTauCa = p_MaTauCa;
 
     IF p_TrangThaiHoatDongTauCa = 'DANG CHO|CHUA DK' THEN
-        RAISE_APPLICATION_ERROR(-20004, 'TAU CHUA DANG KY CHUYEN DANH BAT');
+        RAISE_APPLICATION_ERROR(-20004, 'Error in update_working_status_depart: TAU CHUA DANG KY CHUYEN DANH BAT');
     ELSIF p_TrangThaiHoatDongTauCa = 'DANG HOAT DONG' THEN
-        RAISE_APPLICATION_ERROR(-20005, 'TAU DANG HOAT DONG, KHONG THE DUNG CHUC NANG NAY');
+        RAISE_APPLICATION_ERROR(-20005, 'Error in update_working_status_depart: TAU DANG HOAT DONG, KHONG THE DUNG CHUC NANG NAY');
     END IF;
 
     SELECT MaChuyenDanhBat
@@ -740,9 +813,9 @@ BEGIN
     WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
 
     IF p_TrangThaiDuyetCDB = 'CHO DUYET' THEN
-        RAISE_APPLICATION_ERROR(-20006, 'CHUYEN DANH BAT CHUA DUOC DUYET');
+        RAISE_APPLICATION_ERROR(-20006, 'Error in update_working_status_depart: CHUYEN DANH BAT CHUA DUOC DUYET');
     ELSIF p_TrangThaiDuyetCDB = 'TU CHOI' THEN
-        RAISE_APPLICATION_ERROR(-20007, 'CHUYEN DANH BAT BI TU CHOI');
+        RAISE_APPLICATION_ERROR(-20007, 'Error in update_working_status_depart: CHUYEN DANH BAT BI TU CHOI');
     END IF;
 
     UPDATE TAU_CA
@@ -755,11 +828,13 @@ BEGIN
         NgayXuatBen = SYSDATE
     WHERE MaTauCa = p_MaTauCa;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in update_working_status_depart: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Cap nhat trang thai cap cang
 CREATE OR REPLACE PROCEDURE update_working_status_dock(
@@ -783,43 +858,52 @@ BEGIN
         FROM CHUYEN_DANH_BAT
         WHERE MaTauCa = p_MaTauCa AND TrangThaiHoatDong = 'DANG DANH BAT';
 
-        UPDATE TAU_CA
-        SET TrangThaiHoatDong = 'DANG CHO|CHUA DK'
-        WHERE MaTauCa = p_MaTauCa;
-
         UPDATE CHUYEN_DANH_BAT
         SET TrangThaiHoatDong = 'HOAN THANH',
             CangVe = p_CangVe,
             NgayCapBen = SYSDATE
         WHERE MaTauCa = p_MaTauCa;
 
+        UPDATE TAU_CA
+        SET TrangThaiHoatDong = 'DANG CHO|CHUA DK'
+        WHERE MaTauCa = p_MaTauCa;
+
         UPDATE NGU_TRUONG
         SET SoLuongTauHienTai = SoLuongTauHienTai - 1
         WHERE MaNguTruong = p_MaNguTruong;
     ELSE 
-        RAISE_APPLICATION_ERROR(-20008, 'TAU HIEN TAI KHONG HOAT DONG');
+        RAISE_APPLICATION_ERROR(-20008, 'Error in update_working_status_dock: TAU HIEN TAI KHONG HOAT DONG');
     END IF;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in update_working_status_dock: ' || SQLERRM);
 END;
 /
+--checked
 
 -- CAP NHAT NHAT KY DANH BAT
+
 -- Insert ME_CA
 CREATE OR REPLACE PROCEDURE insert_ME_CA(
-    p_MaChuyenDanhBat   CHUYENDANHBAT.MaChuyenDanhBat%TYPE,
-    p_ThoiGianThaLuoi     CHUYENDANHBAT.ThoiGianThaLuoi%TYPE,
-    p_ThoiGianKeoLuoi     CHUYENDANHBAT.ThoiGianKeoLuoi%TYPE,
-    p_ViTriKeoLuoi        CHUYENDANHBAT.ViTriKeoLuoi%TYPE
+    p_MaChuyenDanhBat       CHUYENDANHBAT.MaChuyenDanhBat%TYPE,
+    p_ThoiGianThaLuoi       CHUYENDANHBAT.ThoiGianThaLuoi%TYPE,
+    p_ThoiGianKeoLuoi       CHUYENDANHBAT.ThoiGianKeoLuoi%TYPE,
+    p_ViTriKeoLuoi          VARCHAR2
 )
 IS
 BEGIN
     INSERT INTO ME_CA(MaChuyenDanhBat, ThoiGianThaLuoi, ThoiGianKeoLuoi, ViTriKeoLuoi)
-    VALUES (p_MaChuyenDanhBat, p_ThoiGianThaLuoi, p_ThoiGianKeoLuoi, p_ViTriKeoLuoi);
+    VALUES (p_MaChuyenDanhBat, p_ThoiGianThaLuoi, p_ThoiGianKeoLuoi, SDO_UTIL.FROM_WKTGEOMETRY(p_ViTriKeoLuoi, 4326));
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_ME_CA: ' || SQLERRM);
 END;
 /
+--checked
 
 --Insert CHI TIET ME_CA
 CREATE OR REPLACE PROCEDURE insert_DANHBAT_THUYSAN(
@@ -833,11 +917,13 @@ BEGIN
     INSERT INTO DANHBAT_THUYSAN(MaChuyenDanhBat, MaMeCa, MaThuySan, KhoiLuong)
     VALUES (p_MaChuyenDanhBat, p_MaMeCa, p_MaThuySan, p_KhoiLuong);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_DANHBAT_THUYSAN: ' || SQLERRM);
 END;
 /
+--checked
 
 -- THEO DOI HAI TRINH
 -- Lay danh sach LOG toa do
@@ -852,9 +938,10 @@ BEGIN
         FROM LOG_HAI_TRINH lht
         WHERE lht.MaChuyenDanhBat = p_MaChuyenDanhBat;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_log_list_CHUYEN_DANH_BAT: ' || SQLERRM);
 END;
 /
 
@@ -876,20 +963,21 @@ BEGIN
     WHERE MaChuyenDanhBat = p_MaChuyenDanhBat;
 
     IF v_exists = 0 THEN
-        RAISE_APPLICATION_ERROR(
-            -20010, 
-            'MaChuyenDanhBat "' || p_MaChuyenDanhBat || '" khong ton tai.'
+        RAISE_APPLICATION_ERROR(-20010, 
+            'insert_LOG_HAI_TRINH_for_CHUYEN_DANH_BAT: Chuyen danh bat khong ton tai.'
         );
     END IF;
 
     INSERT INTO LOG_HAI_TRINH(MaChuyenDanhBat, ThoiGian, ViTri, VanToc, HuongDiChuyen)
-    VALUES (p_MaChuyenDanhBat, p_ThoiGian, SDO_UTIL.FROM_WKTGEOMETRY(p_ViTri), p_VanToc, p_HuongDiChuyen);
+    VALUES (p_MaChuyenDanhBat, p_ThoiGian, SDO_UTIL.FROM_WKTGEOMETRY(p_ViTri, 4326), p_VanToc, p_HuongDiChuyen);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_LOG_HAI_TRINH_for_CHUYEN_DANH_BAT: ' || SQLERRM);
 END;
 /
+--checked
 
 -- TRUY XUAT NHAT KY DANH BAT
 -- Lay nhat ky danh bat
@@ -920,7 +1008,7 @@ BEGIN
             mc.KhoiLuongMeCa, 
             mc.ThoiGianThaLuoi, 
             mc.ThoiGianKeoLuoi, 
-            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(mc.ViTriKeoLuoi), 4000, 1) AS ViTriText,
+            DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(mc.ViTriKeoLuoi), 4000, 1) AS ViTriWKT,
             LISTAGG(ts.TenLoaiThuySan || ': ' || dbts.KhoiLuong || 'kg', ', ') 
                 WITHIN GROUP (ORDER BY ts.TenLoaiThuySan ASC) AS ChiTietMeCa
         FROM ME_CA mc
@@ -934,47 +1022,32 @@ BEGIN
             mc.ThoiGianKeoLuoi, 
             DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(mc.ViTriKeoLuoi), 4000, 1);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_fishing_diary: ' || SQLERRM);
 END;
 /
-
--- TRUY XUAT NGUON GOC THUY SAN
-CREATE OR REPLACE PROCEDURE get_aquatic_origin(
-    thuy_san_cursor OUT SYS_REFCURSOR,
-    p_MaThuySan NVARCHAR2
-)
-IS
-BEGIN
-    OPEN thuy_san_cursor FOR
-        SELECT mc.VITRIKEOLUOI,mc.THOIGIANKEOLUOI,mc.THOIGIANTHALUOI
-        FROM DANHBAT_THUYSAN dbts 
-        JOIN ME_CA mc on dbts.MaMeCa = mc.MaMeCa
-        WHERE dbts.MaThuySan = 1;
-
-    EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
-END;
-/
+--checked
 
 -- Insert VI_PHAM
 CREATE OR REPLACE PROCEDURE insert_VI_PHAM(
     p_MaChuyenDanhBat   VI_PHAM.MaChuyenDanhBat%TYPE,
-    p_ViTri             VI_PHAM.ViTri%TYPE,
+    p_ViTri             VARCHAR2,
     p_MoTa              VI_PHAM.MoTa%TYPE
 )
 IS
 BEGIN
     INSERT INTO VI_PHAM(MaChuyenDanhBat, ViTri, MoTa)
-    VALUES (p_MaChuyenDanhBat, p_ViTri, p_MoTa);
+    VALUES (p_MaChuyenDanhBat, SDO_UTIL.FROM_WKTGEOMETRY(p_ViTri, 4326), p_MoTa);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_VI_PHAM: ' || SQLERRM);
 END;
 /
+--checked
 
 -- Cap nhat MoTa cua VI_PHAM
 CREATE OR REPLACE PROCEDURE update_description_VI_PHAM(
@@ -985,13 +1058,15 @@ IS
 BEGIN
     UPDATE VI_PHAM
     SET MoTa = p_MoTa
-    WHERE MaViPham =p_MaViPham;
+    WHERE MaViPham = p_MaViPham;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in update_description_VI_PHAM: ' || SQLERRM);
 END;
 /
+--checked
 
 --3.NGU TRUONG
 
@@ -1006,23 +1081,44 @@ IS
     v_ViTri SDO_GEOMETRY;
 BEGIN
     BEGIN
-        v_ViTri := SDO_UTIL.FROM_WKTGEOMETRY(p_ViTri);
+        v_ViTri := SDO_UTIL.FROM_WKTGEOMETRY(DBMS_LOB.SUBSTR(p_ViTri, 32767, 1), 4326);
     EXCEPTION
         WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20001, 'WKT không hợp lệ: '||SQLERRM);
+            RAISE_APPLICATION_ERROR(-20001, 'Error in insert_NGU_TRUONG: WKT không hợp lệ, ' || SQLERRM);
     END;
 
     INSERT INTO NGU_TRUONG (TenNguTruong, ViTri, SoLuongTauToiDa)
         VALUES (p_TenNguTruong, v_ViTri, p_SoLuongTauToiDa);
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+        RAISE_APPLICATION_ERROR(-20010,
+            'Error in insert_NGU_TRUONG: ' || SQLERRM);
 END;
 /
+--checked
 
 -- XEM THONG TIN NGU TRUONG
+-- Lay thong tin NGU_TRUONG
+CREATE OR REPLACE PROCEDURE get_fishery_info(
+    ngu_truong_cursor OUT SYS_REFCURSOR,
+    p_MaNguTruong       NGU_TRUONG.MaNguTruong%TYPE
+)
+IS
+BEGIN
 
+    OPEN ngu_truong_cursor FOR
+        SELECT ng.TenNguTruong, DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(ng.ViTri), 32767, 1) AS ViTriWKT, ng.SoLuongTauToiDa, ng.SoLuongTauHienTai
+        FROM NGU_TRUONG ng 
+        WHERE ng.MaNguTruong = p_MaNguTruong;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_fishery_info: ' || SQLERRM);
+END;
+/
+--checked
 
 --4. THONG KE
 -- VI_PHAM
@@ -1033,13 +1129,17 @@ CREATE OR REPLACE PROCEDURE get_list_VI_PHAM(
 IS
 BEGIN
     OPEN vi_pham_cursor FOR
-        SELECT * FROM VI_PHAM;
+        SELECT vp.MaViPham, vp.MaChuyenDanhBat, cdb.MaTauCa, vp.ThoiGian, DBMS_LOB.SUBSTR(SDO_UTIL.TO_WKTGEOMETRY(vp.ViTri), 32767, 1) AS ViTriWKT, vp.MoTa
+        FROM VI_PHAM vp
+        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaChuyenDanhBat = vp.MaChuyenDanhBat; 
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in get_list_VI_PHAM: ' || SQLERRM);
 END;
 /
+--checked
 
 -- THONG KE SO LUONG VI PHAM THEO TAU
 CREATE OR REPLACE PROCEDURE statistics_VI_PHAM_by_TAU_CA(
@@ -1049,17 +1149,19 @@ IS
 BEGIN
     OPEN vi_pham_cursor FOR
         SELECT tc.MaTauCa, tc.SoDangKy, count(vp.MaViPham) AS SoLuongLoiViPham
-        FROM VI_PHAM vp
-        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaChuyenDanhBat = vp.MaChuyenDanhBat
-        JOIN TAU_CA tc ON tc.MaTauCa = cdb.MaTauCa
-        GROUP BY tc.MaTauCa
+        FROM TAU_CA tc
+        JOIN CHUYEN_DANH_BAT cdb ON cdb.MaTauCa = tc.MaTauCa
+        LEFT JOIN VI_PHAM vp ON vp.MaChuyenDanhBat = cdb.MaChuyenDanhBat
+        GROUP BY tc.MaTauCa, tc.SoDangKy
         ORDER BY SoLuongLoiViPham DESC;
 
-    EXCEPTION
+EXCEPTION
     WHEN OTHERS THEN
-        RAISE;
+    RAISE_APPLICATION_ERROR(-20010,
+            'Error in statistics_VI_PHAM_by_TAU_CA: ' || SQLERRM);
 END;
 /
+--checked
 
 -- THUY SAN
 -- THONG KE SAN LUONG THEO LOAI THUY SAN
@@ -1144,7 +1246,7 @@ IS
     v_ViTri SDO_GEOMETRY;
 BEGIN
     BEGIN
-        v_ViTri := SDO_UTIL.FROM_WKTGEOMETRY(p_ViTriWKT);
+        v_ViTri := SDO_UTIL.FROM_WKTGEOMETRY(p_ViTriWKT, 4326);
     EXCEPTION
         WHEN OTHERS THEN
             RAISE_APPLICATION_ERROR(-20001, 'WKT không hợp lệ: '||SQLERRM);
@@ -1192,37 +1294,6 @@ BEGIN
 END;
 /
 
---Kiem tra dang ky
-CREATE OR REPLACE FUNCTION Fn_kiem_tra_username_ton_tai(
-    p_username NVARCHAR2
-) RETURN BOOLEAN
-IS
-    f_count INTEGER;
-BEGIN
-    SELECT COUNT(*) 
-    INTO f_count
-    FROM APP_USER
-    WHERE USERNAME = p_username;
-
-    RETURN f_count > 0;
-END;
-/
-
---Kiem tra cccd ton tai
-CREATE OR REPLACE FUNCTION Fn_kiem_tra_cccd_ton_tai (
-    p_cccd NVARCHAR2
-) RETURN BOOLEAN
-IS
-    f_count INTEGER;
-BEGIN
-    SELECT COUNT(*) INTO f_count
-    FROM CHU_TAU
-    WHERE CCCD = p_cccd;
-
-    RETURN f_count > 0;
-END;
-/
-
 -- Kiem tra so luong tau hien tai
 CREATE OR REPLACE FUNCTION Fn_kiem_tra_so_luong_tau (
     p_MaNguTruong      NGU_TRUONG.MaNguTruong%TYPE
@@ -1243,7 +1314,7 @@ EXCEPTION
 END;
 /
 
---Kiem tra user co phai admin khong
+-- Kiem tra user co phai admin khong
 CREATE OR REPLACE FUNCTION Fn_la_admin (
     p_user_id NVARCHAR2
 ) RETURN BOOLEAN
@@ -1257,40 +1328,6 @@ BEGIN
     RETURN f_count > 0;
 END;
 /
-
---Kiem tra tau co hoat dong khong
-CREATE OR REPLACE FUNCTION Fn_tau_dang_hoat_dong (
-    p_MaTauCa NVARCHAR2
-) RETURN BOOLEAN
-IS
-    f_trangthai NVARCHAR2(20);
-BEGIN
-    SELECT TrangThaiHoatDong INTO f_trangthai
-    FROM TAU_CA
-    WHERE MaTauCa = p_MaTauCa;
-
-    RETURN f_trangthai = 'DANG HOAT DONG';
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RETURN FALSE;
-END;
-/
-
---Dem so chuyen danh bat cua mot tau
-CREATE OR REPLACE FUNCTION Fn_dem_chuyen_danh_bat (
-    p_MaTauCa NVARCHAR2
-) RETURN INTEGER
-IS
-    f_count INTEGER;
-BEGIN
-    SELECT COUNT(*) INTO f_count
-    FROM CHUYEN_DANH_BAT
-    WHERE MaTauCa = p_MaTauCa;
-
-    RETURN f_count;
-END;
-/
-
 
 -- VII. TEST CASE
 
